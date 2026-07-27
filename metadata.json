@@ -1,0 +1,6 @@
+{
+  "name": "Tool Vip",
+  "description": "Hệ thống tối ưu hóa game và đóng băng ứng dụng rác, hỗ trợ bởi AI cực mạnh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
