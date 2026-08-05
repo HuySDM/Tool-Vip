@@ -7,18 +7,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Lấy toàn bộ mã nguồn
+      - name: Lấy mã nguồn
         uses: actions/checkout@v4
 
-      - name: Cài đặt Java 17
+      - name: Cài đặt JDK phù hợp Android
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
 
+      - name: Cài Android SDK & công cụ cần thiết
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y android-sdk
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+
+      - name: Tạo tệp gradlew nếu thiếu
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.5
+            chmod +x gradlew
+          fi
+
       - name: Biên dịch APK
-        run: gradle clean assembleDebug --stacktrace
+        run: ./gradlew clean assembleDebug --stacktrace --no-daemon
 
       - name: Lưu APK
         uses: actions/upload-artifact@v5
