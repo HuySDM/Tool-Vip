@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.AppViewModel
@@ -345,6 +347,154 @@ fun SettingsScreen(
                                 }
                             }
                         }
+
+                        // NEW: Advanced Scheduler Controls
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Divider(color = BorderGreen.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val isIdleOnly by viewModel.isIdleModeOnlyEnabled.collectAsState()
+                        val pingBoosted by viewModel.networkPingBoosted.collectAsState()
+                        val isIdle by viewModel.isDeviceIdle.collectAsState()
+                        val cacheSize by viewModel.simulatedJunkSizeMb.collectAsState()
+
+                        // Idle Mode Only Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Chỉ tối ưu khi thiết bị rảnh (Idle Only)",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = "Chỉ dọn dẹp cache rác và đóng băng ngầm khi bạn không dùng máy để tiết kiệm tài nguyên tuyệt đối.",
+                                    color = TextGray,
+                                    fontSize = 10.5.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                            Switch(
+                                checked = isIdleOnly,
+                                onCheckedChange = { viewModel.setIdleModeOnlyEnabled(it) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = DeepObsidian,
+                                    checkedTrackColor = BrightTurquoise
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Ping network booster Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Tối ưu hóa Ping mạng cực hạn",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = "Tự động thiết lập DNS ròng bypass và tăng tốc ping game mạng nhanh mạnh, ổn định đường truyền.",
+                                    color = TextGray,
+                                    fontSize = 10.5.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                            Switch(
+                                checked = pingBoosted,
+                                onCheckedChange = { viewModel.setNetworkPingBoosted(it) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = DeepObsidian,
+                                    checkedTrackColor = BrightTurquoise
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Status Info Box (Cache, device state, testing button)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White.copy(alpha = 0.05f))
+                                .border(1.dp, BorderGreen.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "📂 Bộ nhớ đệm tạm thời (Cache rác):",
+                                        color = TextGray,
+                                        fontSize = 11.sp
+                                    )
+                                    Text(
+                                        text = "${String.format("%.1f", cacheSize)} MB",
+                                        color = BrightTurquoise,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "📱 Trạng thái thiết bị:",
+                                        color = TextGray,
+                                        fontSize = 11.sp
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(RoundedCornerShape(3.dp))
+                                                .background(if (isIdle) BrightTurquoise else CoralVibrant)
+                                        )
+                                        Text(
+                                            text = if (isIdle) "RẢNH (IDLE)" else "HOẠT ĐỘNG (ACTIVE)",
+                                            color = if (isIdle) BrightTurquoise else CoralVibrant,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    Text(
+                                        text = "[ĐỔI TRẠNG THÁI GIẢ LẬP]",
+                                        color = BrightTurquoise,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier
+                                            .clickable { viewModel.toggleDeviceIdleState() }
+                                            .padding(vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -512,6 +662,250 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("XÁC NHẬN CẬP NHẬT TÀI KHOẢN", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // 2FA PIN CONFIGURATION CARD
+        item {
+            val authPin = userAccount?.authPin ?: ""
+            val displayPin = if (authPin.isBlank()) "10293847" else authPin
+
+            var newPinState by remember { mutableStateOf("") }
+            var isPinVisible by remember { mutableStateOf(false) }
+
+            // Forgot PIN dialog/states
+            var showRecoverySection by remember { mutableStateOf(false) }
+            var otpState by remember { mutableStateOf("") }
+            var recoveryNewPinState by remember { mutableStateOf("") }
+            var isRecoveryPinVisible by remember { mutableStateOf(false) }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, CoralVibrant)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Security, "2FA Security", tint = CoralVibrant)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Bảo Mật Xác Thực 2 Lớp (2FA PIN)",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Mã xác thực 2 lớp bảo vệ tài khoản khỏi truy cập trái phép. Mỗi khi khởi động lại hoặc mở lại ứng dụng, bạn sẽ cần nhập chính xác mã này.",
+                        color = TextGray,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Showing the current code if desired
+                    var showCurrentPin by remember { mutableStateOf(false) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(DeepObsidian.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Column {
+                            Text(text = "MÃ XÁC THỰC HIỆN TẠI", color = TextGray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (showCurrentPin) displayPin else "••••••••",
+                                color = if (showCurrentPin) BrightTurquoise else Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        IconButton(onClick = { showCurrentPin = !showCurrentPin }) {
+                            Icon(
+                                imageVector = if (showCurrentPin) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = "Xem mã",
+                                tint = BrightTurquoise
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Input for setting/updating custom 2FA PIN
+                    OutlinedTextField(
+                        value = newPinState,
+                        onValueChange = { newPinState = it },
+                        label = { Text("Thiết lập mã xác thực mới", color = TextGray, fontSize = 11.sp) },
+                        visualTransformation = if (isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = CoralVibrant,
+                            unfocusedBorderColor = BorderGreen
+                        ),
+                        trailingIcon = {
+                            IconButton(onClick = { isPinVisible = !isPinVisible }) {
+                                Icon(
+                                    imageVector = if (isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle",
+                                    tint = TextGray
+                                )
+                            }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "( Lưu ý: Không nên để mã xác thực là MK của TK )",
+                        color = Color.Red,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.requestForgotPinRecovery { success, msg ->
+                                    viewModel.showToast(msg)
+                                    if (success) {
+                                        showRecoverySection = true
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("QUÊN MÃ", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.updateUserAuthPin(newPinState) { success, msg ->
+                                    viewModel.showToast(msg)
+                                    if (success) {
+                                        newPinState = ""
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant),
+                            modifier = Modifier.weight(1.3f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("CẬP NHẬT MÃ", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    // Recovery fields (only visible when requested)
+                    AnimatedVisibility(visible = showRecoverySection) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                                .border(1.dp, BrightTurquoise.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .background(DeepObsidian.copy(alpha = 0.3f))
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = "KHÔI PHỤC MÃ QUA EMAIL",
+                                color = BrightTurquoise,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = otpState,
+                                onValueChange = { otpState = it },
+                                label = { Text("Mã OTP nhận qua Email (Ví dụ: 123456)", color = TextGray, fontSize = 10.sp) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedBorderColor = BrightTurquoise,
+                                    unfocusedBorderColor = BorderGreen
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = recoveryNewPinState,
+                                onValueChange = { recoveryNewPinState = it },
+                                label = { Text("Nhập mã xác thực mới", color = TextGray, fontSize = 10.sp) },
+                                visualTransformation = if (isRecoveryPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedBorderColor = BrightTurquoise,
+                                    unfocusedBorderColor = BorderGreen
+                                ),
+                                trailingIcon = {
+                                    IconButton(onClick = { isRecoveryPinVisible = !isRecoveryPinVisible }) {
+                                        Icon(
+                                            imageVector = if (isRecoveryPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = "Toggle",
+                                            tint = TextGray
+                                        )
+                                    }
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "( Lưu ý: Không nên để mã xác thực là MK của TK )",
+                                color = Color.Red,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Button(
+                                onClick = {
+                                    viewModel.verifyRecoveryCodeAndResetPin(otpState, recoveryNewPinState) { success, msg ->
+                                        viewModel.showToast(msg)
+                                        if (success) {
+                                            otpState = ""
+                                            recoveryNewPinState = ""
+                                            showRecoverySection = false
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise, contentColor = DeepObsidian),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("XÁC NHẬN ĐỔI MÃ QUA OTP", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }

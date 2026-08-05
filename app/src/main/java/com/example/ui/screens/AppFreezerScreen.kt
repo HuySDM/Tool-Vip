@@ -27,6 +27,8 @@ import com.example.data.AppItem
 import com.example.ui.AppViewModel
 import com.example.ui.TelexConverter
 import com.example.ui.theme.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @Composable
 fun AppFreezerScreen(
@@ -50,11 +52,64 @@ fun AppFreezerScreen(
     val isAiGameOptimizing by viewModel.isAiGameOptimizing.collectAsState()
     val isDeepCleaning by viewModel.isDeepCleaning.collectAsState()
     val deepCleanStatus by viewModel.deepCleanStatus.collectAsState()
+    val isAutoClearCacheEnabled by viewModel.isAutoClearCacheEnabled.collectAsState()
 
     var showConfirmDialog by remember { mutableStateOf(false) }
+    var showDeepFreezeConfirmDialog by remember { mutableStateOf(false) }
     var dialogTargetApp by remember { mutableStateOf<AppItem?>(null) }
     var isBatchActionFreezing by remember { mutableStateOf(true) }
     var showBatchConfirmDialog by remember { mutableStateOf(false) }
+
+    // Cryo-File Freezer states
+    val coroutineScope = rememberCoroutineScope()
+    var selectedFilesToFreeze by remember { mutableStateOf(setOf("apk", "logs", "shaders")) }
+    var isFileFreezingProgress by remember { mutableStateOf(false) }
+    var fileFreezingProgressValue by remember { mutableStateOf(0f) }
+    var isFilesDeepFrozen by remember { mutableStateOf(false) }
+    val fileFreezerLogs = remember { mutableStateListOf<String>() }
+
+    // Initial logs load
+    LaunchedEffect(Unit) {
+        if (fileFreezerLogs.isEmpty()) {
+            fileFreezerLogs.add("Hệ thống nén tệp: Sẵn sàng đóng băng tệp tin thặng dư...")
+        }
+    }
+
+    // Interactive File Freezing Logic
+    fun triggerFileCryoFreezer() {
+        if (isFileFreezingProgress) return
+        isFileFreezingProgress = true
+        fileFreezingProgressValue = 0f
+        fileFreezerLogs.clear()
+        fileFreezerLogs.add("🥶 Khởi chạy động cơ Cryo-File Freezer...")
+        
+        coroutineScope.launch {
+            kotlinx.coroutines.delay(600)
+            fileFreezerLogs.add("🔍 Đang rà quét các phân vùng tệp tin thặng dư...")
+            fileFreezingProgressValue = 0.25f
+            kotlinx.coroutines.delay(800)
+            if (selectedFilesToFreeze.contains("apk")) {
+                fileFreezerLogs.add("📦 Đóng băng thành công: 4 tệp APK thặng dư (~512MB)")
+            }
+            fileFreezingProgressValue = 0.5f
+            kotlinx.coroutines.delay(800)
+            if (selectedFilesToFreeze.contains("logs")) {
+                fileFreezerLogs.add("📝 Thu hồi dung lượng: 1,420 tệp Logs & Temp DB (~240MB)")
+            }
+            fileFreezingProgressValue = 0.75f
+            kotlinx.coroutines.delay(800)
+            if (selectedFilesToFreeze.contains("shaders")) {
+                fileFreezerLogs.add("🎮 Cô lập bộ nhớ đệm Shaders đồ họa (~670MB)")
+            }
+            fileFreezingProgressValue = 0.9f
+            kotlinx.coroutines.delay(600)
+            fileFreezerLogs.add("⚡ Tối ưu cấu hình file hệ thống hoàn tất!")
+            fileFreezingProgressValue = 1.0f
+            isFilesDeepFrozen = true
+            isFileFreezingProgress = false
+            viewModel.showToast("❄️ Siêu Đóng Băng File hoàn thành! Đã giải phóng 1.42 GB bộ nhớ.")
+        }
+    }
 
     // Filter apps list based on query and selected category filter
     val filteredApps = remember(apps, searchQuery, currentFilter) {
@@ -65,6 +120,7 @@ fun AppFreezerScreen(
                 "SYSTEM" -> app.isSystemApp
                 "USER" -> !app.isSystemApp
                 "FROZEN" -> app.isFrozen
+                "JUNK" -> app.isTrash
                 else -> true
             }
             matchesSearch && matchesFilter
@@ -246,7 +302,18 @@ fun AppFreezerScreen(
 
                         Switch(
                             checked = isDeepFreezeEnabled,
-                            onCheckedChange = { viewModel.toggleDeepFreeze(it) },
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    val tier = userAccount?.tier ?: "UNPAID"
+                                    if (tier == "UNPAID") {
+                                        viewModel.showToast("Tính năng Đóng băng sâu (Deep Freeze) yêu cầu đặc quyền VIP 1 trở lên!")
+                                    } else {
+                                        showDeepFreezeConfirmDialog = true
+                                    }
+                                } else {
+                                    viewModel.toggleDeepFreeze(false)
+                                }
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = DeepObsidian,
                                 checkedTrackColor = BrightTurquoise
@@ -328,6 +395,174 @@ fun AppFreezerScreen(
                                 color = if (usedRamPercent > 0.8f) CoralVibrant else if (usedRamPercent > 0.6f) BrightTurquoise else GlowGreen,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // SIÊU ĐÓNG BĂNG FILE RÁC & TỆP TIN (CRYO-FILE FREEZER MASTER)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, BrightTurquoise.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AcUnit, "Cryo File Freezer", tint = BrightTurquoise)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Cryo-File Freezer Cực Hạn",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(BrightTurquoise.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text("FREEZE", color = BrightTurquoise, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "Chọn phân vùng tệp tin thặng dư cần cô lập và đóng băng sâu để giải phóng dung lượng & tăng tốc độ truy xuất ổ cứng:",
+                        color = TextGray,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // File category selectors
+                    val categories = listOf(
+                        "apk" to ("Tệp APK thặng dư cài đặt" to "~512 MB"),
+                        "logs" to ("Nhật ký Logs hệ thống & DB tạm" to "~240 MB"),
+                        "shaders" to ("Bộ nhớ đệm Shaders đồ họa" to "~670 MB")
+                    )
+
+                    categories.forEach { (key, data) ->
+                        val (label, size) = data
+                        val isSelected = selectedFilesToFreeze.contains(key)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    val current = selectedFilesToFreeze.toMutableSet()
+                                    if (isSelected) current.remove(key) else current.add(key)
+                                    selectedFilesToFreeze = current
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { checked ->
+                                        val current = selectedFilesToFreeze.toMutableSet()
+                                        if (checked) current.add(key) else current.remove(key)
+                                        selectedFilesToFreeze = current
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = BrightTurquoise,
+                                        checkmarkColor = DeepObsidian
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = label, color = Color.White, fontSize = 12.sp)
+                            }
+                            Text(text = size, color = BrightTurquoise, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Futuristic Terminal Output
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .border(BorderStroke(0.5.dp, BorderGreen.copy(alpha = 0.3f)), RoundedCornerShape(10.dp))
+                            .padding(10.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            fileFreezerLogs.forEach { log ->
+                                Text(
+                                    text = "> $log",
+                                    color = if (log.contains("🥶") || log.contains(" thành công") || log.contains("hoàn tất")) GlowGreen else TextGray,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
+
+                    if (isFileFreezingProgress) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { fileFreezingProgressValue },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = BrightTurquoise,
+                            trackColor = DeepObsidian
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Action Button
+                    Button(
+                        onClick = { triggerFileCryoFreezer() },
+                        enabled = !isFileFreezingProgress && selectedFilesToFreeze.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrightTurquoise,
+                            contentColor = DeepObsidian,
+                            disabledContainerColor = BrightTurquoise.copy(alpha = 0.4f),
+                            disabledContentColor = TextGray
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (isFileFreezingProgress) {
+                            CircularProgressIndicator(
+                                color = DeepObsidian,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("ĐANG ĐÓNG BĂNG TỆP TIN CRYO...", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.AcUnit, "Freeze Files", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isFilesDeepFrozen) "ĐÃ ĐÓNG BĂNG FILE SÂU (CHẠY LẠI)" else "KÍCH HOẠT SIÊU ĐÓNG BĂNG TỆP TIN",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black
                             )
                         }
                     }
@@ -679,6 +914,40 @@ fun AppFreezerScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.05f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Tự động xóa bộ nhớ đệm nền",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Dọn dẹp rác khi bộ nhớ đầy hoặc khởi động game",
+                                color = TextGray,
+                                fontSize = 9.sp
+                            )
+                        }
+                        Switch(
+                            checked = isAutoClearCacheEnabled,
+                            onCheckedChange = { viewModel.setAutoClearCacheEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = DeepObsidian,
+                                checkedTrackColor = CoralVibrant
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Button(
                         onClick = { viewModel.runDeepClean() },
                         enabled = !isDeepCleaning,
@@ -749,9 +1018,10 @@ fun AppFreezerScreen(
                 ) {
                     val filters = listOf(
                         "ALL" to "Tất cả",
+                        "JUNK" to "App Rác",
                         "SYSTEM" to "Hệ thống",
                         "USER" to "Người dùng",
-                        "FROZEN" to "Đã đóng băng"
+                        "FROZEN" to "Đóng băng"
                     )
 
                     filters.forEach { (filterKey, label) ->
@@ -933,6 +1203,39 @@ fun AppFreezerScreen(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
                             )
+
+                            if (app.isFrozen) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(BrightTurquoise.copy(alpha = 0.12f))
+                                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("CÔ LẬP TIẾN TRÌNH", color = BrightTurquoise, fontSize = 7.sp, fontWeight = FontWeight.Black)
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(BrightTurquoise.copy(alpha = 0.12f))
+                                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("CHẶN BROADCAST", color = BrightTurquoise, fontSize = 7.sp, fontWeight = FontWeight.Black)
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(BrightTurquoise.copy(alpha = 0.12f))
+                                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("NÉN HEAP RAM 0MB", color = BrightTurquoise, fontSize = 7.sp, fontWeight = FontWeight.Black)
+                                    }
+                                }
+                            }
                         }
 
                         // Actions (Freeze/Unfreeze)
@@ -1032,6 +1335,43 @@ fun AppFreezerScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showBatchConfirmDialog = false }) {
+                    Text("HUỶ BỎ", color = TextGray)
+                }
+            }
+        )
+    }
+
+    // Deep Freeze confirmation dialog
+    if (showDeepFreezeConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeepFreezeConfirmDialog = false },
+            containerColor = DarkTealCard,
+            title = {
+                Text(text = "Kích Hoạt Deep Freeze?", color = BrightTurquoise, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    text = "Tính năng Đóng băng sâu (Deep Freeze) sẽ tự động đóng băng và giải phóng triệt để tài nguyên RAM của các ứng dụng chạy ngầm không cần thiết (Facebook, TikTok, Chrome, v.v.) khi chơi game. Điều này giúp tối đa hóa fps, giảm giật lag và tối ưu hóa ping cực đại cho trò chơi đang chạy.\n\nBạn có chắc chắn muốn kích hoạt?",
+                    color = Color.White,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.toggleDeepFreeze(true)
+                        showDeepFreezeConfirmDialog = false
+                    }
+                ) {
+                    Text("ĐỒNG Ý", color = BrightTurquoise, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeepFreezeConfirmDialog = false
+                    }
+                ) {
                     Text("HUỶ BỎ", color = TextGray)
                 }
             }

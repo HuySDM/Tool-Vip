@@ -25,7 +25,8 @@ data class UserAccount(
     val requestedTier: String = "",
     val requestedRoleName: String = "",
     val hasPendingRequest: Boolean = false,
-    val isUserDataAuthorized: Boolean = false
+    val isUserDataAuthorized: Boolean = false,
+    val authPin: String = ""
 )
 
 @Entity(tableName = "app_items")

@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontFamily
@@ -49,6 +50,9 @@ fun RechargeScreen(
     modifier: Modifier = Modifier
 ) {
     val userAccount by viewModel.userAccount.collectAsState()
+    val allUserAccounts by viewModel.allUserAccounts.collectAsState()
+    var selectedUserForAdminActions by remember { mutableStateOf("") }
+    var adminActiveTab by remember { mutableStateOf(0) } // 0: Users, 1: Revenue & Prices, 2: Giftcodes
     val df = DecimalFormat("#,###")
 
     var customAmountText by remember { mutableStateOf("") }
@@ -131,19 +135,19 @@ fun RechargeScreen(
                         Box(
                             modifier = Modifier
                                 .size(110.dp)
-                                .clip(RoundedCornerShape(24.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .border(
                                     BorderStroke(2.dp, BrightTurquoise),
-                                    RoundedCornerShape(24.dp)
+                                    RoundedCornerShape(16.dp)
                                 )
                                 .background(DeepObsidian),
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.img_tool_vip_logo),
+                                painter = painterResource(id = R.drawable.img_tool_vip_logo_v2_1785668711300),
                                 contentDescription = "Tool Vip Premium Logo",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                modifier = Modifier.fillMaxSize().padding(2.dp),
+                                contentScale = ContentScale.Fit
                             )
                         }
 
@@ -206,323 +210,1202 @@ fun RechargeScreen(
                         Spacer(modifier = Modifier.height(14.dp))
                         Divider(color = Color.White.copy(alpha = 0.1f))
                         Spacer(modifier = Modifier.height(14.dp))
-                        
-                        // PART A: QUẢN LÝ CẤP BẬC / PHÂN QUYỀN (Grant & Revoke Ranks)
-                        Text(
-                            text = "1. PHÂN QUYỀN CẤP BẬC THÀNH VIÊN",
-                            color = BrightTurquoise,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Row A1: VIP levels
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            val tiersList = listOf(
-                                "UNPAID" to "HỘI VIÊN THƯỜNG",
-                                "VIP1" to "NÂNG VIP 1",
-                                "VIP2" to "NÂNG VIP 2"
-                            )
-                            tiersList.forEach { (tKey, label) ->
-                                Button(
-                                    onClick = { 
-                                        val roleLabel = when(tKey) {
-                                            "VIP1" -> "Hội viên VIP 1"
-                                            "VIP2" -> "Hội viên VIP 2 Pro"
-                                            else -> "Thành viên thường"
-                                        }
-                                        viewModel.updateAccountTierAndRoleDirectly(tKey, roleLabel)
-                                        notificationMessage = "Đã thay đổi cấp bậc thành công: $label!"
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (tKey == "UNPAID") Color(0xFF2D151B) else BorderGreen,
-                                        contentColor = if (tKey == "UNPAID") CoralVibrant else GlowGreen
-                                    ),
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                                ) {
-                                    Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
 
-                        // Row A2: Support Roles (Staff, Manager, CTV)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            val staffList = listOf(
-                                "STAFF" to "BỔ NHIỆM NV",
-                                "MANAGER" to "BỔ NHIỆM QL",
-                                "PARTNER" to "BỔ NHIỆM CTV"
-                            )
-                            staffList.forEach { (roleKey, label) ->
-                                Button(
-                                    onClick = {
-                                        val roleLabel = when(roleKey) {
-                                            "STAFF" -> "Nhân viên hỗ trợ"
-                                            "MANAGER" -> "Quản lý hệ thống"
-                                            else -> "Cộng tác viên cao cấp"
-                                        }
-                                        viewModel.updateAccountTierAndRoleDirectly(roleKey, roleLabel)
-                                        notificationMessage = "Đã bổ nhiệm chức vụ thành công sang $label!"
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = CoralVibrant.copy(alpha = 0.15f),
-                                        contentColor = CoralVibrant
-                                    ),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(0.5.dp, CoralVibrant),
-                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                                ) {
-                                    Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
+                        // Collect duration configurations
+                        val vip1DurationValue by viewModel.vip1DurationValue.collectAsState()
+                        val vip1DurationUnit by viewModel.vip1DurationUnit.collectAsState()
+                        val vip2DurationValue by viewModel.vip2DurationValue.collectAsState()
+                        val vip2DurationUnit by viewModel.vip2DurationUnit.collectAsState()
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // PART B: CHI PHỐI DÒNG TIỀN VẢO (Currency Balance Flow Control)
-                        Text(
-                            text = "2. CHI PHỐI DÒNG TIỀN ẢO HỆ THỐNG",
-                            color = BrightTurquoise,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Quick balance modifiers
+                        // 3 Beautifully Designed Tab Selectors
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            val cashModifiers = listOf(
-                                50000.0 to "+50K",
-                                100000.0 to "+100K",
-                                200000.0 to "+200K",
-                                -100000.0 to "-100K"
+                            val tabsList = listOf(
+                                "Thành Viên" to Icons.Default.People,
+                                "Doanh Thu & Giá" to Icons.Default.AttachMoney,
+                                "Mã Giftcode" to Icons.Default.CardGiftcard
                             )
-                            cashModifiers.forEach { (amount, label) ->
+                            tabsList.forEachIndexed { idx, (title, icon) ->
+                                val isSelected = adminActiveTab == idx
                                 Button(
-                                    onClick = { viewModel.modifyAccountBalanceByAmount(amount) },
+                                    onClick = { adminActiveTab = idx },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (amount < 0) Color(0xFF2D151B) else DeepObsidian,
-                                        contentColor = if (amount < 0) CoralVibrant else GlowGreen
+                                        containerColor = if (isSelected) CoralVibrant else CoralVibrant.copy(alpha = 0.08f),
+                                        contentColor = if (isSelected) Color.White else TextGray
                                     ),
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(vertical = 8.dp),
+                                    border = if (isSelected) BorderStroke(1.dp, CoralVibrant) else BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f))
                                 ) {
-                                    Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(10.dp))
-                        
-                        // Custom direct balance setting input
-                        var customBalanceText by remember { mutableStateOf("") }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = customBalanceText,
-                                onValueChange = { input ->
-                                    if (input.all { it.isDigit() }) {
-                                        customBalanceText = input
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(icon, null, modifier = Modifier.size(16.dp), tint = if (isSelected) Color.White else TextGray)
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(title, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                     }
-                                },
-                                modifier = Modifier.weight(1.5f),
-                                placeholder = { Text("Nhập số tiền...", color = TextGray, fontSize = 11.sp) },
+                                }
+                            }
+                        }
+
+                        if (adminActiveTab == 0) {
+                            // ==================== TAB 0: QUẢN LÝ THÀNH VIÊN ====================
+                            Text(
+                                text = "CHỌN TÀI KHOẢN THÀNH VIÊN ĐỂ ĐIỀU KHIỂN",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            
+                            var userSearchText by remember { mutableStateOf("") }
+                            OutlinedTextField(
+                                value = userSearchText,
+                                onValueChange = { userSearchText = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("Tìm kiếm tên tài khoản...", color = TextGray, fontSize = 11.sp) },
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralVibrant,
-                                    unfocusedBorderColor = BorderGreen,
+                                    focusedBorderColor = BrightTurquoise,
+                                    unfocusedBorderColor = BorderGreen.copy(alpha = 0.5f),
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(8.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                singleLine = true
                             )
                             
-                            Button(
-                                onClick = {
-                                    val balanceValue = customBalanceText.toDoubleOrNull()
-                                    if (balanceValue != null && balanceValue >= 0) {
-                                        viewModel.updateAccountBalanceDirectly(balanceValue)
-                                        customBalanceText = ""
-                                    } else {
-                                        notificationError = "Vui lòng nhập số dư hợp lệ!"
-                                    }
-                                },
-                                modifier = Modifier.weight(1.5f),
-                                colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(vertical = 12.dp)
-                            ) {
-                                Text("ĐẶT SỐ DƯ", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            val filteredUsers = allUserAccounts.filter {
+                                it.username.contains(userSearchText, ignoreCase = true)
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // PART C: ĐIỀU CHỈNH GIÁ VIP HỆ THỐNG (Adjust VIP costs dynamically)
-                        Text(
-                            text = "3. ĐIỀU CHỈNH GIÁ VIP HỆ THỐNG",
-                            color = BrightTurquoise,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        var vip1PriceText by remember { mutableStateOf("") }
-                        var vip2PriceText by remember { mutableStateOf("") }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = vip1PriceText,
-                                onValueChange = { if (it.all { char -> char.isDigit() }) vip1PriceText = it },
-                                modifier = Modifier.weight(1f),
-                                placeholder = { Text("Mới (VND)", color = TextGray, fontSize = 10.sp) },
-                                label = { Text("Giá VIP 1", color = TextGray, fontSize = 9.sp) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralVibrant,
-                                    unfocusedBorderColor = BorderGreen,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            OutlinedTextField(
-                                value = vip2PriceText,
-                                onValueChange = { if (it.all { char -> char.isDigit() }) vip2PriceText = it },
-                                modifier = Modifier.weight(1f),
-                                placeholder = { Text("Mới (VND)", color = TextGray, fontSize = 10.sp) },
-                                label = { Text("Giá VIP 2", color = TextGray, fontSize = 9.sp) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralVibrant,
-                                    unfocusedBorderColor = BorderGreen,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            Button(
-                                onClick = {
-                                    val price1 = vip1PriceText.toDoubleOrNull() ?: (userAccount?.vip1Price ?: 50000.0)
-                                    val price2 = vip2PriceText.toDoubleOrNull() ?: (userAccount?.vip2Price ?: 120000.0)
-                                    viewModel.updateVipPrices(price1, price2)
-                                    vip1PriceText = ""
-                                    vip2PriceText = ""
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 12.dp)
+                            
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                             ) {
-                                Text("LƯU GIÁ", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Divider(color = Color.White.copy(alpha = 0.1f))
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // PART D: PHÊ DUYỆT THÀNH VIÊN BAN QUẢN TRỊ
-                        Text(
-                            text = "4. DUYỆT THÀNH VIÊN BAN QUẢN TRỊ",
-                            color = BrightTurquoise,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        val pendingRequests by viewModel.pendingRoleRequests.collectAsState()
-                        LaunchedEffect(Unit) {
-                            viewModel.loadPendingRoleRequests()
-                        }
-
-                        if (pendingRequests.isEmpty()) {
-                            Text(
-                                text = "Không có yêu cầu ứng tuyển ban quản lý nào đang chờ duyệt.",
-                                color = TextGray,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                pendingRequests.forEach { req ->
+                                items(filteredUsers) { account ->
+                                    val isSelected = selectedUserForAdminActions == account.username
+                                    val borderGlow = if (isSelected) BrightTurquoise else BorderGreen.copy(alpha = 0.3f)
+                                    val bgGlow = if (isSelected) BrightTurquoise.copy(alpha = 0.15f) else Color.Transparent
+                                    
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(DeepObsidian, RoundedCornerShape(8.dp))
-                                            .border(BorderStroke(0.5.dp, BorderGreen.copy(alpha = 0.5f)), RoundedCornerShape(8.dp))
-                                            .padding(8.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(bgGlow)
+                                            .border(BorderStroke(1.dp, borderGlow), RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                selectedUserForAdminActions = account.username
+                                            }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
                                     ) {
-                                        Column {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Text(
-                                                text = "Tài khoản: ${req.username}",
-                                                color = Color.White,
+                                                text = account.username,
+                                                color = if (isSelected) BrightTurquoise else Color.White,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp
-                                            )
-                                            Text(
-                                                text = "Email: ${req.email}",
-                                                color = TextGray,
-                                                fontSize = 10.sp
-                                            )
-                                            Text(
-                                                text = "Ứng tuyển vai trò: ${req.requestedRoleName}",
-                                                color = GlowGreen,
-                                                fontWeight = FontWeight.Medium,
                                                 fontSize = 11.sp
                                             )
-                                            
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            
+                                            Text(
+                                                text = "${df.format(account.balance)}đ",
+                                                color = GlowGreen,
+                                                fontSize = 9.sp
+                                            )
+                                            Text(
+                                                text = account.tier,
+                                                color = CoralVibrant,
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            val effectiveTargetUser = if (selectedUserForAdminActions.isNotEmpty()) selectedUserForAdminActions else (userAccount?.username ?: "")
+                            val targetAccount = allUserAccounts.find { it.username == effectiveTargetUser }
+                            
+                            Spacer(modifier = Modifier.height(10.dp))
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(BrightTurquoise.copy(alpha = 0.1f))
+                                    .border(1.dp, BrightTurquoise.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                    .padding(10.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "🎯 ĐANG ĐIỀU HÀNH TÀI KHOẢN: $effectiveTargetUser",
+                                        color = BrightTurquoise,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                    if (targetAccount != null) {
+                                        Text(
+                                            text = "• Số dư hiện tại: ${df.format(targetAccount.balance)}đ  |  • Cấp độ: ${targetAccount.tier} (${targetAccount.customRole})",
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Divider(color = Color.White.copy(alpha = 0.1f))
+                            Spacer(modifier = Modifier.height(14.dp))
+                            
+                            // PART A: QUẢN LÝ CẤP BẬC / PHÂN QUYỀN
+                            Text(
+                                text = "1. PHÂN QUYỀN CẤP BẬC THÀNH VIÊN",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val tiersList = listOf(
+                                    "UNPAID" to "HỘI VIÊN THƯỜNG",
+                                    "VIP1" to "NÂNG VIP 1",
+                                    "VIP2" to "NÂNG VIP 2"
+                                )
+                                tiersList.forEach { (tKey, label) ->
+                                    Button(
+                                        onClick = { 
+                                            viewModel.adjustUserTierDirect(effectiveTargetUser, tKey)
+                                            notificationMessage = "Đã thay đổi cấp bậc cho [$effectiveTargetUser] thành công: $label!"
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (tKey == "UNPAID") Color(0xFF2D151B) else BorderGreen,
+                                            contentColor = if (tKey == "UNPAID") CoralVibrant else GlowGreen
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val staffList = listOf(
+                                    "STAFF" to "BỔ NHIỆM NV",
+                                    "MANAGER" to "BỔ NHIỆM QL",
+                                    "PARTNER" to "BỔ NHIỆM CTV"
+                                )
+                                staffList.forEach { (roleKey, label) ->
+                                    Button(
+                                        onClick = {
+                                            viewModel.adjustUserTierDirect(effectiveTargetUser, roleKey)
+                                            notificationMessage = "Đã bổ nhiệm chức vụ cho [$effectiveTargetUser] sang $label!"
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = CoralVibrant.copy(alpha = 0.15f),
+                                            contentColor = CoralVibrant
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(0.5.dp, CoralVibrant),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // PART B: CHI PHỐI DÒNG TIỀN
+                            Text(
+                                text = "2. CHI PHỐI DÒNG TIỀN ẢO HỆ THỐNG",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val cashModifiers = listOf(
+                                    50000.0 to "+50K",
+                                    100000.0 to "+100K",
+                                    200000.0 to "+200K",
+                                    -100000.0 to "-100K"
+                                )
+                                cashModifiers.forEach { (amount, label) ->
+                                    Button(
+                                        onClick = { 
+                                            viewModel.adjustUserBalanceDirect(effectiveTargetUser, amount, "Admin chi phối dòng tiền")
+                                            notificationMessage = "Đã thay đổi số dư tài khoản [$effectiveTargetUser]: ${if (amount >= 0) "+" else ""}${df.format(amount)}đ"
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (amount < 0) Color(0xFF2D151B) else DeepObsidian,
+                                            contentColor = if (amount < 0) CoralVibrant else GlowGreen
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(10.dp))
+                            
+                            var customBalanceText by remember { mutableStateOf("") }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = customBalanceText,
+                                    onValueChange = { input ->
+                                        if (input.all { it.isDigit() }) {
+                                            customBalanceText = input
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1.5f),
+                                    placeholder = { Text("Nhập số tiền...", color = TextGray, fontSize = 11.sp) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = CoralVibrant,
+                                        unfocusedBorderColor = BorderGreen,
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                )
+                                
+                                Button(
+                                    onClick = {
+                                        val balanceValue = customBalanceText.toDoubleOrNull()
+                                        if (balanceValue != null && balanceValue >= 0) {
+                                            viewModel.setUserBalanceDirect(effectiveTargetUser, balanceValue)
+                                            notificationMessage = "Đã đặt số dư cho [$effectiveTargetUser] thành ${df.format(balanceValue)}đ"
+                                            customBalanceText = ""
+                                        } else {
+                                            notificationError = "Vui lòng nhập số dư hợp lệ!"
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1.5f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(vertical = 12.dp)
+                                ) {
+                                    Text("ĐẶT SỐ DƯ THỦ CÔNG", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider(color = Color.White.copy(alpha = 0.1f))
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // PART D: PHÊ DUYỆT THÀNH VIÊN BAN QUẢN TRỊ
+                            Text(
+                                text = "3. DUYỆT THÀNH VIÊN BAN QUẢN TRỊ",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            val pendingRequests by viewModel.pendingRoleRequests.collectAsState()
+                            LaunchedEffect(Unit) {
+                                viewModel.loadPendingRoleRequests()
+                            }
+
+                            if (pendingRequests.isEmpty()) {
+                                Text(
+                                    text = "Không có yêu cầu ứng tuyển ban quản lý nào đang chờ duyệt.",
+                                    color = TextGray,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    pendingRequests.forEach { req ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(DeepObsidian, RoundedCornerShape(8.dp))
+                                                .border(BorderStroke(0.5.dp, BorderGreen.copy(alpha = 0.5f)), RoundedCornerShape(8.dp))
+                                                .padding(8.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = "Tài khoản: ${req.username}",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp
+                                                )
+                                                Text(
+                                                    text = "Email: ${req.email}",
+                                                    color = TextGray,
+                                                    fontSize = 10.sp
+                                                )
+                                                Text(
+                                                    text = "Ứng tuyển vai trò: ${req.requestedRoleName}",
+                                                    color = GlowGreen,
+                                                    fontWeight = FontWeight.Medium,
+                                                    fontSize = 11.sp
+                                                )
+                                                
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Button(
+                                                        onClick = { viewModel.approveRoleRequest(req.username) },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = GlowGreen, contentColor = DeepObsidian),
+                                                        shape = RoundedCornerShape(6.dp),
+                                                        modifier = Modifier.weight(1f),
+                                                        contentPadding = PaddingValues(vertical = 4.dp)
+                                                    ) {
+                                                        Text("DUYỆT", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                    Button(
+                                                        onClick = { viewModel.rejectRoleRequest(req.username) },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
+                                                        shape = RoundedCornerShape(6.dp),
+                                                        modifier = Modifier.weight(1f),
+                                                        contentPadding = PaddingValues(vertical = 4.dp)
+                                                    ) {
+                                                        Text("TỪ CHỐI", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider(color = Color.White.copy(alpha = 0.1f))
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // PART E: CẬP NHẬT TÀI KHOẢN & MẬT KHẨU ADMIN TỐI CAO
+                            Text(
+                                text = "4. CẤU HÌNH TÀI KHOẢN & MẬT KHẨU ADMIN",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            var newAdminUser by remember { mutableStateOf("") }
+                            var newAdminPass by remember { mutableStateOf("") }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = newAdminUser,
+                                    onValueChange = { newAdminUser = it },
+                                    label = { Text("Tên tài khoản Admin mới", color = TextGray, fontSize = 10.sp) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = CoralVibrant,
+                                        unfocusedBorderColor = BorderGreen,
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                OutlinedTextField(
+                                    value = newAdminPass,
+                                    onValueChange = { newAdminPass = it },
+                                    label = { Text("Mật khẩu Admin mới", color = TextGray, fontSize = 10.sp) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = CoralVibrant,
+                                        unfocusedBorderColor = BorderGreen,
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                Button(
+                                    onClick = {
+                                        viewModel.updateAdminCredentials(newAdminUser, newAdminPass) { success, message ->
+                                            if (success) {
+                                                notificationMessage = message
+                                                newAdminUser = ""
+                                                newAdminPass = ""
+                                            } else {
+                                                notificationError = message
+                                            }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("CẬP NHẬT TÀI KHOẢN ADMIN", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        } else if (adminActiveTab == 1) {
+                            // ==================== TAB 1: DOANH THU & GIÁ VIP ====================
+                            val succTx = allTransactions.filter { it.status == "SUCCESS" }
+                            val totalDeposited = succTx.filter { it.type == "DEPOSIT" }.sumOf { it.amount }
+                            val totalVip1Purchased = succTx.filter { it.type == "UPGRADE_VIP1" }.sumOf { kotlin.math.abs(it.amount) }
+                            val totalVip2Purchased = succTx.filter { it.type == "UPGRADE_VIP2" }.sumOf { kotlin.math.abs(it.amount) }
+                            val allAccountsBalances = allUserAccounts.sumOf { it.balance }
+                            val calculatedTotalRevenue = totalDeposited // Since total money entered in the system is deposits!
+                            
+                            Text(
+                                text = "BÁO CÁO DOANH THU HỆ THỐNG",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            
+                            // Grid reporting
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // Row 1: Calculated Pure Revenue
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(GlowGreen.copy(alpha = 0.1f))
+                                        .border(1.dp, GlowGreen.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                        .padding(14.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text("TỔNG DOANH THU THỰC TẾ (NẠP TIỀN)", color = TextGray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                            Text("${df.format(calculatedTotalRevenue)}đ", color = GlowGreen, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                                        }
+                                        Icon(Icons.Default.TrendingUp, null, tint = GlowGreen, modifier = Modifier.size(36.dp))
+                                    }
+                                }
+                                
+                                // Row 2: Grid of specific sales
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(BrightTurquoise.copy(alpha = 0.05f))
+                                            .border(0.5.dp, BrightTurquoise.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                            .padding(10.dp)
+                                    ) {
+                                        Column {
+                                            Text("DOANH SỐ VIP 1", color = TextGray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text("${df.format(totalVip1Purchased)}đ", color = BrightTurquoise, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                            Text("Lượt mua: ${succTx.filter { it.type == "UPGRADE_VIP1" }.size}", color = TextGray, fontSize = 8.sp)
+                                        }
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(CoralVibrant.copy(alpha = 0.05f))
+                                            .border(0.5.dp, CoralVibrant.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                            .padding(10.dp)
+                                    ) {
+                                        Column {
+                                            Text("DOANH SỐ VIP 2 PRO", color = TextGray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text("${df.format(totalVip2Purchased)}đ", color = CoralVibrant, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                            Text("Lượt mua: ${succTx.filter { it.type == "UPGRADE_VIP2" }.size}", color = TextGray, fontSize = 8.sp)
+                                        }
+                                    }
+                                }
+                                
+                                // Row 3: Grid of liability & counts
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color.White.copy(alpha = 0.03f))
+                                            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
+                                            .padding(10.dp)
+                                    ) {
+                                        Column {
+                                            Text("SỐ DƯ THÀNH VIÊN", color = TextGray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text("${df.format(allAccountsBalances)}đ", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            Text("Tổng quỹ ví", color = TextGray, fontSize = 8.sp)
+                                        }
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color.White.copy(alpha = 0.03f))
+                                            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
+                                            .padding(10.dp)
+                                    ) {
+                                        Column {
+                                            Text("SỐ THÀNH VIÊN", color = TextGray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text("${allUserAccounts.size} người dùng", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            Text("VIP1: ${allUserAccounts.filter { it.tier == "VIP1" }.size} | VIP2: ${allUserAccounts.filter { it.tier == "VIP2" }.size}", color = TextGray, fontSize = 8.sp)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Divider(color = Color.White.copy(alpha = 0.1f))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // GIAO DIỆN CẤU HÌNH VIP GIÁ & THỜI HẠN
+                            Text(
+                                text = "THIẾT LẬP GIÁ TIỀN & THỜI HẠN VIP TOÀN CẦU",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Thiết lập giá trị nạp kích hoạt VIP 1 & VIP 2, cùng thời hạn trải nghiệm khi người dùng nhấn nút mua VIP.",
+                                color = TextGray,
+                                fontSize = 10.sp,
+                                lineHeight = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // VIP 1 config inputs
+                            var editVip1Price by remember { mutableStateOf("") }
+                            var editVip1DurVal by remember { mutableStateOf("") }
+                            var editVip1DurUnit by remember { mutableStateOf("ngày") } // "giờ", "ngày", "tuần", "tháng", "vĩnh viễn"
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(BrightTurquoise.copy(alpha = 0.04f))
+                                    .border(0.5.dp, BrightTurquoise.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("CẤU HÌNH GÓI VIP 1 - HIỆN TẠI: ${df.format(userAccount?.vip1Price ?: 50000.0)}đ / $vip1DurationValue $vip1DurationUnit", color = BrightTurquoise, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(
+                                            value = editVip1Price,
+                                            onValueChange = { if (it.all { c -> c.isDigit() }) editVip1Price = it },
+                                            modifier = Modifier.weight(1.5f),
+                                            placeholder = { Text("Giá mới (VND)", color = TextGray, fontSize = 10.sp) },
+                                            label = { Text("Giá tiền (đ)", color = TextGray, fontSize = 8.sp) },
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = BrightTurquoise,
+                                                unfocusedBorderColor = BorderGreen.copy(alpha = 0.4f),
+                                                focusedTextColor = Color.White,
+                                                unfocusedTextColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(8.dp),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                        )
+                                        OutlinedTextField(
+                                            value = editVip1DurVal,
+                                            onValueChange = { if (it.all { c -> c.isDigit() }) editVip1DurVal = it },
+                                            modifier = Modifier.weight(1f),
+                                            placeholder = { Text("VD: 30", color = TextGray, fontSize = 10.sp) },
+                                            label = { Text("Thời lượng", color = TextGray, fontSize = 8.sp) },
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = BrightTurquoise,
+                                                unfocusedBorderColor = BorderGreen.copy(alpha = 0.4f),
+                                                focusedTextColor = Color.White,
+                                                unfocusedTextColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(8.dp),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            enabled = editVip1DurUnit != "vĩnh viễn"
+                                        )
+                                    }
+                                    
+                                    // Unit selectors
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        val units = listOf("giờ", "ngày", "tuần", "tháng", "vĩnh viễn")
+                                        units.forEach { u ->
+                                            val isSelected = editVip1DurUnit == u
+                                            Button(
+                                                onClick = { editVip1DurUnit = u },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (isSelected) BrightTurquoise else DeepObsidian,
+                                                    contentColor = if (isSelected) DeepObsidian else TextGray
+                                                ),
+                                                shape = RoundedCornerShape(6.dp),
+                                                contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                            ) {
+                                                Text(u, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                    
+                                    Button(
+                                        onClick = {
+                                            val priceVal = editVip1Price.toDoubleOrNull() ?: (userAccount?.vip1Price ?: 50000.0)
+                                            val durValue = editVip1DurVal.toIntOrNull() ?: 30
+                                            // Save prices
+                                            viewModel.updateVipPricesGlobally(priceVal, userAccount?.vip2Price ?: 120000.0)
+                                            // Save duration
+                                            viewModel.updateVipConfig("VIP1", durValue, editVip1DurUnit)
+                                            notificationMessage = "Cập nhật cấu hình VIP 1 thành công!"
+                                            editVip1Price = ""
+                                            editVip1DurVal = ""
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise, contentColor = DeepObsidian),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("LƯU CẤU HÌNH VIP 1", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // VIP 2 config inputs
+                            var editVip2Price by remember { mutableStateOf("") }
+                            var editVip2DurVal by remember { mutableStateOf("") }
+                            var editVip2DurUnit by remember { mutableStateOf("ngày") } // "giờ", "ngày", "tuần", "tháng", "vĩnh viễn"
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(CoralVibrant.copy(alpha = 0.04f))
+                                    .border(0.5.dp, CoralVibrant.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("CẤU HÌNH GÓI VIP 2 PRO - HIỆN TẠI: ${df.format(userAccount?.vip2Price ?: 120000.0)}đ / $vip2DurationValue $vip2DurationUnit", color = CoralVibrant, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(
+                                            value = editVip2Price,
+                                            onValueChange = { if (it.all { c -> c.isDigit() }) editVip2Price = it },
+                                            modifier = Modifier.weight(1.5f),
+                                            placeholder = { Text("Giá mới (VND)", color = TextGray, fontSize = 10.sp) },
+                                            label = { Text("Giá tiền (đ)", color = TextGray, fontSize = 8.sp) },
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = CoralVibrant,
+                                                unfocusedBorderColor = BorderGreen.copy(alpha = 0.4f),
+                                                focusedTextColor = Color.White,
+                                                unfocusedTextColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(8.dp),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                        )
+                                        OutlinedTextField(
+                                            value = editVip2DurVal,
+                                            onValueChange = { if (it.all { c -> c.isDigit() }) editVip2DurVal = it },
+                                            modifier = Modifier.weight(1f),
+                                            placeholder = { Text("VD: 30", color = TextGray, fontSize = 10.sp) },
+                                            label = { Text("Thời lượng", color = TextGray, fontSize = 8.sp) },
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = CoralVibrant,
+                                                unfocusedBorderColor = BorderGreen.copy(alpha = 0.4f),
+                                                focusedTextColor = Color.White,
+                                                unfocusedTextColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(8.dp),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            enabled = editVip2DurUnit != "vĩnh viễn"
+                                        )
+                                    }
+                                    
+                                    // Unit selectors
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        val units = listOf("giờ", "ngày", "tuần", "tháng", "vĩnh viễn")
+                                        units.forEach { u ->
+                                            val isSelected = editVip2DurUnit == u
+                                            Button(
+                                                onClick = { editVip2DurUnit = u },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (isSelected) CoralVibrant else DeepObsidian,
+                                                    contentColor = if (isSelected) Color.White else TextGray
+                                                ),
+                                                shape = RoundedCornerShape(6.dp),
+                                                contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                            ) {
+                                                Text(u, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                    
+                                    Button(
+                                        onClick = {
+                                            val priceVal = editVip2Price.toDoubleOrNull() ?: (userAccount?.vip2Price ?: 120000.0)
+                                            val durValue = editVip2DurVal.toIntOrNull() ?: 30
+                                            // Save prices
+                                            viewModel.updateVipPricesGlobally(userAccount?.vip1Price ?: 50000.0, priceVal)
+                                            // Save duration
+                                            viewModel.updateVipConfig("VIP2", durValue, editVip2DurUnit)
+                                            notificationMessage = "Cập nhật cấu hình VIP 2 PRO thành công!"
+                                            editVip2Price = ""
+                                            editVip2DurVal = ""
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("LƯU CẤU HÌNH VIP 2 PRO", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                    }
+                                }
+                            }
+                        } else {
+                            // ==================== TAB 2: QUẢN LÝ GIFTCODES VIP ====================
+                            Text(
+                                text = "TẠO & QUẢN LÝ MÃ GIFTCODE VIP",
+                                color = BrightTurquoise,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Khởi tạo mã Giftcode với giá trị bậc VIP và khoảng thời lượng sử dụng chính xác tùy chọn của bạn.",
+                                color = TextGray,
+                                fontSize = 10.sp,
+                                lineHeight = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            var newCodeText by remember { mutableStateOf("") }
+                            var selectedCodeTier by remember { mutableStateOf("VIP1") }
+                            var selectedCodeDurVal by remember { mutableStateOf("30") }
+                            var selectedCodeDurUnit by remember { mutableStateOf("ngày") } // "giờ", "ngày", "tuần", "tháng", "vĩnh viễn"
+
+                            // Expiration settings for the gift code itself
+                            var expiryPreset by remember { mutableStateOf("unlimited") } // "unlimited", "10m", "1h", "1d", "7d", "30d", "custom"
+                            var expiryCustomValue by remember { mutableStateOf("24") }
+                            var expiryCustomUnit by remember { mutableStateOf("giờ") } // "giờ", "ngày"
+                            var randomCodeLength by remember { mutableStateOf(8) } // 6, 8, 12
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = newCodeText,
+                                    onValueChange = { newCodeText = it.uppercase() },
+                                    label = { Text("Nhập mã Giftcode tự chọn (VD: PRO99)", color = TextGray, fontSize = 10.sp) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = CoralVibrant,
+                                        unfocusedBorderColor = BorderGreen,
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Generator helper row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Length selector
+                                    Row(
+                                        modifier = Modifier
+                                            .weight(1.2f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(DeepObsidian)
+                                            .border(0.5.dp, BorderGreen.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                            .padding(2.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        listOf(6, 8, 12).forEach { len ->
+                                            val isSelected = randomCodeLength == len
+                                            Button(
+                                                onClick = { randomCodeLength = len },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (isSelected) CoralVibrant else Color.Transparent,
+                                                    contentColor = if (isSelected) Color.White else TextGray
+                                                 ),
+                                                 shape = RoundedCornerShape(6.dp),
+                                                 modifier = Modifier.weight(1f),
+                                                 contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                             ) {
+                                                 Text("${len} ký tự", fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                             }
+                                         }
+                                     }
+
+                                     // Trigger generator
+                                     Button(
+                                         onClick = {
+                                             val allowedChars = ('A'..'Z') + ('0'..'9')
+                                             newCodeText = (1..randomCodeLength).map { allowedChars.random() }.joinToString("")
+                                         },
+                                         colors = ButtonDefaults.buttonColors(
+                                             containerColor = ElectricBlue,
+                                             contentColor = Color.White
+                                         ),
+                                         shape = RoundedCornerShape(8.dp),
+                                         modifier = Modifier.weight(1f),
+                                         contentPadding = PaddingValues(vertical = 8.dp)
+                                     ) {
+                                         Icon(
+                                             imageVector = Icons.Default.Refresh,
+                                             contentDescription = "Tạo ngẫu nhiên",
+                                             modifier = Modifier.size(12.dp)
+                                         )
+                                         Spacer(modifier = Modifier.width(4.dp))
+                                         Text("NGẪU NHIÊN", fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                     }
+                                 }
+
+                                 Row(
+                                     modifier = Modifier.fillMaxWidth(),
+                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     // Tier selector
+                                     Box(
+                                         modifier = Modifier.weight(1.2f).clip(RoundedCornerShape(8.dp)).background(DeepObsidian).border(0.5.dp, BorderGreen.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(2.dp)
+                                     ) {
+                                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                             val tiers = listOf("VIP1" to "VIP 1", "VIP2" to "VIP 2")
+                                             tiers.forEach { (t, label) ->
+                                                 val isSel = selectedCodeTier == t
+                                                 Button(
+                                                     onClick = { selectedCodeTier = t },
+                                                     colors = ButtonDefaults.buttonColors(
+                                                         containerColor = if (isSel) CoralVibrant else Color.Transparent,
+                                                         contentColor = if (isSel) Color.White else TextGray
+                                                     ),
+                                                     shape = RoundedCornerShape(6.dp),
+                                                     modifier = Modifier.weight(1f),
+                                                     contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                                 ) {
+                                                     Text(label, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                                 }
+                                             }
+                                         }
+                                     }
+
+                                     // Duration val text field
+                                     OutlinedTextField(
+                                         value = selectedCodeDurVal,
+                                         onValueChange = { if (it.all { c -> c.isDigit() }) selectedCodeDurVal = it },
+                                         modifier = Modifier.weight(0.8f),
+                                         placeholder = { Text("Thời lượng", color = TextGray, fontSize = 10.sp) },
+                                         label = { Text("Số lượng", color = TextGray, fontSize = 8.sp) },
+                                         colors = OutlinedTextFieldDefaults.colors(
+                                             focusedBorderColor = BrightTurquoise,
+                                             unfocusedBorderColor = BorderGreen,
+                                             focusedTextColor = Color.White,
+                                             unfocusedTextColor = Color.White
+                                         ),
+                                         shape = RoundedCornerShape(8.dp),
+                                         singleLine = true,
+                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                         enabled = selectedCodeDurUnit != "vĩnh viễn"
+                                     )
+                                 }
+                                 
+                                 // Unit selector buttons row
+                                 Row(
+                                     modifier = Modifier.fillMaxWidth(),
+                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                 ) {
+                                     val units = listOf("giờ", "ngày", "tuần", "tháng", "vĩnh viễn")
+                                     units.forEach { u ->
+                                         val isSel = selectedCodeDurUnit == u
+                                         Button(
+                                             onClick = { selectedCodeDurUnit = u },
+                                             modifier = Modifier.weight(1f),
+                                             colors = ButtonDefaults.buttonColors(
+                                                 containerColor = if (isSel) BrightTurquoise else DeepObsidian,
+                                                 contentColor = if (isSel) DeepObsidian else TextGray
+                                             ),
+                                             shape = RoundedCornerShape(6.dp),
+                                             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                         ) {
+                                             Text(u, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                         }
+                                     }
+                                 }
+
+                                 Spacer(modifier = Modifier.height(2.dp))
+                                 Text(
+                                     text = "HẠN TỰ ĐỘNG HỦY CỦA MÃ GIFTCODE:",
+                                     color = TextGray,
+                                     fontSize = 9.sp,
+                                     fontWeight = FontWeight.Bold
+                                 )
+
+                                 // Preset grid row 1
+                                 Row(
+                                     modifier = Modifier.fillMaxWidth(),
+                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                 ) {
+                                     val presets1 = listOf(
+                                         "unlimited" to "Không hạn",
+                                         "10m" to "10 phút",
+                                         "1h" to "1 giờ",
+                                         "1d" to "1 ngày"
+                                     )
+                                     presets1.forEach { (p, label) ->
+                                         val isSel = expiryPreset == p
+                                         Button(
+                                             onClick = { expiryPreset = p },
+                                             modifier = Modifier.weight(1f),
+                                             colors = ButtonDefaults.buttonColors(
+                                                 containerColor = if (isSel) BrightTurquoise else DeepObsidian,
+                                                 contentColor = if (isSel) DeepObsidian else TextGray
+                                             ),
+                                             shape = RoundedCornerShape(6.dp),
+                                             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                         ) {
+                                             Text(label, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                         }
+                                     }
+                                 }
+
+                                 // Preset grid row 2
+                                 Row(
+                                     modifier = Modifier.fillMaxWidth(),
+                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                 ) {
+                                     val presets2 = listOf(
+                                         "7d" to "7 ngày",
+                                         "30d" to "30 ngày",
+                                         "custom" to "Tùy chỉnh"
+                                     )
+                                     presets2.forEach { (p, label) ->
+                                         val isSel = expiryPreset == p
+                                         Button(
+                                             onClick = { expiryPreset = p },
+                                             modifier = Modifier.weight(1f),
+                                             colors = ButtonDefaults.buttonColors(
+                                                 containerColor = if (isSel) BrightTurquoise else DeepObsidian,
+                                                 contentColor = if (isSel) DeepObsidian else TextGray
+                                             ),
+                                             shape = RoundedCornerShape(6.dp),
+                                             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                         ) {
+                                             Text(label, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                         }
+                                     }
+                                 }
+
+                                 // Show custom expiration input if selected
+                                 if (expiryPreset == "custom") {
+                                     Row(
+                                         modifier = Modifier.fillMaxWidth(),
+                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                         verticalAlignment = Alignment.CenterVertically
+                                     ) {
+                                         OutlinedTextField(
+                                             value = expiryCustomValue,
+                                             onValueChange = { if (it.all { c -> c.isDigit() }) expiryCustomValue = it },
+                                             modifier = Modifier.weight(1.2f),
+                                             placeholder = { Text("Số lượng", color = TextGray, fontSize = 10.sp) },
+                                             label = { Text("Hạn sử dụng", color = TextGray, fontSize = 8.sp) },
+                                             colors = OutlinedTextFieldDefaults.colors(
+                                                 focusedBorderColor = BrightTurquoise,
+                                                 unfocusedBorderColor = BorderGreen,
+                                                 focusedTextColor = Color.White,
+                                                 unfocusedTextColor = Color.White
+                                             ),
+                                             shape = RoundedCornerShape(8.dp),
+                                             singleLine = true,
+                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                         )
+
+                                         Row(
+                                             modifier = Modifier
+                                                 .weight(1f)
+                                                 .clip(RoundedCornerShape(8.dp))
+                                                 .background(DeepObsidian)
+                                                 .border(0.5.dp, BorderGreen.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                                 .padding(2.dp),
+                                             horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                         ) {
+                                             listOf("giờ", "ngày").forEach { unit ->
+                                                 val isSel = expiryCustomUnit == unit
+                                                 Button(
+                                                     onClick = { expiryCustomUnit = unit },
+                                                     colors = ButtonDefaults.buttonColors(
+                                                         containerColor = if (isSel) BrightTurquoise else Color.Transparent,
+                                                         contentColor = if (isSel) DeepObsidian else TextGray
+                                                     ),
+                                                     shape = RoundedCornerShape(6.dp),
+                                                     modifier = Modifier.weight(1f),
+                                                     contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                                 ) {
+                                                     Text(unit, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                                 }
+                                             }
+                                         }
+                                     }
+                                 }
+
+                                 Button(
+                                     onClick = {
+                                         if (newCodeText.trim().isNotBlank()) {
+                                             val durVal = selectedCodeDurVal.toIntOrNull() ?: 30
+                                             
+                                             // Calculate expiry timestamp
+                                             val now = System.currentTimeMillis()
+                                             val expiryTimestamp = when (expiryPreset) {
+                                                 "10m" -> now + 10 * 60 * 1000L
+                                                 "1h" -> now + 60 * 60 * 1000L
+                                                 "1d" -> now + 24 * 60 * 60 * 1000L
+                                                 "7d" -> now + 7 * 24 * 60 * 60 * 1000L
+                                                 "30d" -> now + 30L * 24 * 60 * 60 * 1000L
+                                                 "custom" -> {
+                                                     val customVal = expiryCustomValue.toLongOrNull() ?: 24L
+                                                     if (expiryCustomUnit == "ngày") {
+                                                         now + customVal * 24 * 60 * 60 * 1000L
+                                                     } else {
+                                                         now + customVal * 60 * 60 * 1000L
+                                                     }
+                                                 }
+                                                 else -> 0L // unlimited
+                                             }
+
+                                             viewModel.addCustomGiftCode(
+                                                 code = newCodeText.trim(),
+                                                 tier = selectedCodeTier,
+                                                 durationValue = durVal,
+                                                 durationUnit = selectedCodeDurUnit,
+                                                 expiryTimestamp = expiryTimestamp
+                                             )
+                                             notificationMessage = "Đã tạo mã quà tặng thành công!"
+                                             newCodeText = ""
+                                         } else {
+                                             notificationError = "Vui lòng nhập hoặc chọn tạo mã ngẫu nhiên!"
+                                         }
+                                     },
+                                     colors = ButtonDefaults.buttonColors(containerColor = GlowGreen, contentColor = DeepObsidian),
+                                     shape = RoundedCornerShape(8.dp),
+                                     modifier = Modifier.fillMaxWidth()
+                                 ) {
+                                     Text("TẠO MÃ QUÀ TẶNG NGAY", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                 }
+                             }
+
+                            // Display active custom gift codes
+                            val customGiftCodes by viewModel.customGiftCodes.collectAsState()
+                            if (customGiftCodes.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = "DANH SÁCH MÃ QUÀ TẶNG ĐÃ TẠO:",
+                                    color = TextGray,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    customGiftCodes.forEach { gc ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(DeepObsidian, RoundedCornerShape(6.dp))
+                                                .border(0.5.dp, BorderGreen.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = gc.code,
+                                                    color = BrightTurquoise,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp
+                                                )
+                                                val durDesc = if (gc.durationUnit == "vĩnh viễn") "Vĩnh viễn" else "${gc.durationValue} ${gc.durationUnit}"
+                                                val isExpired = gc.expiryTimestamp > 0L && System.currentTimeMillis() > gc.expiryTimestamp
+                                                val expiryText = if (gc.expiryTimestamp > 0L) {
+                                                    val sdfStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(gc.expiryTimestamp))
+                                                    if (isExpired) "Hết hạn: $sdfStr (QUÁ HẠN)" else "Hết hạn: $sdfStr"
+                                                } else {
+                                                    "Hạn sử dụng: Không giới hạn"
+                                                }
+                                                Text(
+                                                    text = "Loại: ${gc.tier} • Trị giá: $durDesc",
+                                                    color = TextGray,
+                                                    fontSize = 9.sp
+                                                )
+                                                Text(
+                                                    text = expiryText,
+                                                    color = if (isExpired) Color.Red else if (gc.expiryTimestamp > 0L) AccentYellow else GlowGreen,
+                                                    fontSize = 8.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+
                                             Row(
-                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
-                                                Button(
-                                                    onClick = { viewModel.approveRoleRequest(req.username) },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = GlowGreen, contentColor = DeepObsidian),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.weight(1f),
-                                                    contentPadding = PaddingValues(vertical = 4.dp)
+                                                val isExpired = gc.expiryTimestamp > 0L && System.currentTimeMillis() > gc.expiryTimestamp
+                                                val statusLabel = if (gc.isUsed) "ĐÃ DÙNG" else if (isExpired) "HẾT HẠN" else "SẴN SÀNG"
+                                                val statusColor = if (gc.isUsed) Color.Red else if (isExpired) Color.Gray else GlowGreen
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(statusColor.copy(alpha = 0.15f))
+                                                        .border(0.5.dp, statusColor, RoundedCornerShape(4.dp))
+                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
                                                 ) {
-                                                    Text("DUYỆT", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                    Text(
+                                                        text = statusLabel,
+                                                        color = statusColor,
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
                                                 }
-                                                Button(
-                                                    onClick = { viewModel.rejectRoleRequest(req.username) },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.weight(1f),
-                                                    contentPadding = PaddingValues(vertical = 4.dp)
-                                                ) {
-                                                    Text("TỪ CHỐI", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                                }
+
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Delete",
+                                                    tint = CoralVibrant,
+                                                    modifier = Modifier
+                                                        .size(18.dp)
+                                                        .clickable {
+                                                            viewModel.deleteCustomGiftCode(gc.code)
+                                                        }
+                                                )
                                             }
                                         }
                                     }
@@ -530,74 +1413,6 @@ fun RechargeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Divider(color = Color.White.copy(alpha = 0.1f))
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // PART E: CẬP NHẬT TÀI KHOẢN & MẬT KHẨU ADMIN TỐI CAO
-                        Text(
-                            text = "5. CẤU HÌNH TÀI KHOẢN & MẬT KHẨU ADMIN",
-                            color = BrightTurquoise,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        var newAdminUser by remember { mutableStateOf("") }
-                        var newAdminPass by remember { mutableStateOf("") }
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = newAdminUser,
-                                onValueChange = { newAdminUser = it },
-                                label = { Text("Tên tài khoản Admin mới", color = TextGray, fontSize = 10.sp) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralVibrant,
-                                    unfocusedBorderColor = BorderGreen,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            OutlinedTextField(
-                                value = newAdminPass,
-                                onValueChange = { newAdminPass = it },
-                                label = { Text("Mật khẩu Admin mới", color = TextGray, fontSize = 10.sp) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralVibrant,
-                                    unfocusedBorderColor = BorderGreen,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Button(
-                                onClick = {
-                                    viewModel.updateAdminCredentials(newAdminUser, newAdminPass) { success, message ->
-                                        if (success) {
-                                            notificationMessage = message
-                                            newAdminUser = ""
-                                            newAdminPass = ""
-                                        } else {
-                                            notificationError = message
-                                        }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("CẬP NHẬT TÀI KHOẢN ADMIN", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        
                         Spacer(modifier = Modifier.height(16.dp))
                         Divider(color = Color.White.copy(alpha = 0.1f))
                         Spacer(modifier = Modifier.height(12.dp))

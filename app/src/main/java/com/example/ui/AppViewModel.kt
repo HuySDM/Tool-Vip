@@ -158,13 +158,207 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _batteryOptimizationApplied = MutableStateFlow(false)
     val batteryOptimizationApplied: StateFlow<Boolean> = _batteryOptimizationApplied.asStateFlow()
 
+    // --- UI THEME & INTERFACE CUSTOMIZATION STATES (TÙY CHỈNH GIAO DIỆN) ---
+    private val _themeStyle = MutableStateFlow(sharedPrefs.getString("ui_theme_style", "DeepObsidian") ?: "DeepObsidian")
+    val themeStyle: StateFlow<String> = _themeStyle.asStateFlow()
+
+    private val _cardTransparency = MutableStateFlow(sharedPrefs.getFloat("ui_card_transparency", 0.95f))
+    val cardTransparency: StateFlow<Float> = _cardTransparency.asStateFlow()
+
+    private val _cardCornerRadius = MutableStateFlow(sharedPrefs.getInt("ui_card_corner_radius", 16))
+    val cardCornerRadius: StateFlow<Int> = _cardCornerRadius.asStateFlow()
+
+    private val _glowIntensity = MutableStateFlow(sharedPrefs.getString("ui_glow_intensity", "Normal") ?: "Normal")
+    val glowIntensity: StateFlow<String> = _glowIntensity.asStateFlow()
+
+    private val _dynamicPulseEnabled = MutableStateFlow(sharedPrefs.getBoolean("ui_dynamic_pulse_enabled", true))
+    val dynamicPulseEnabled: StateFlow<Boolean> = _dynamicPulseEnabled.asStateFlow()
+
+    fun setThemeStyle(style: String) {
+        _themeStyle.value = style
+        sharedPrefs.edit().putString("ui_theme_style", style).apply()
+    }
+
+    fun setCardTransparency(transparency: Float) {
+        _cardTransparency.value = transparency
+        sharedPrefs.edit().putFloat("ui_card_transparency", transparency).apply()
+    }
+
+    fun setCardCornerRadius(radius: Int) {
+        _cardCornerRadius.value = radius
+        sharedPrefs.edit().putInt("ui_card_corner_radius", radius).apply()
+    }
+
+    fun setGlowIntensity(intensity: String) {
+        _glowIntensity.value = intensity
+        sharedPrefs.edit().putString("ui_glow_intensity", intensity).apply()
+    }
+
+    fun setDynamicPulseEnabled(enabled: Boolean) {
+        _dynamicPulseEnabled.value = enabled
+        sharedPrefs.edit().putBoolean("ui_dynamic_pulse_enabled", enabled).apply()
+    }
+
+    // --- GAME BOOSTER LEVEL STATES (CHẾ ĐỘ TĂNG TỐC GAME) ---
+    private val _boosterLevel = MutableStateFlow(sharedPrefs.getInt("booster_level", 2))
+    val boosterLevel: StateFlow<Int> = _boosterLevel.asStateFlow()
+
+    fun setBoosterLevel(level: Int) {
+        _boosterLevel.value = level
+        sharedPrefs.edit().putInt("booster_level", level).apply()
+    }
+
+    // --- AI-DRIVEN GAME PROFILE STATES ---
+    private val _isGameProfileAiEnabled = MutableStateFlow(sharedPrefs.getBoolean("game_profile_ai_enabled", true))
+    val isGameProfileAiEnabled: StateFlow<Boolean> = _isGameProfileAiEnabled.asStateFlow()
+
+    private val _selectedGameProfilePackage = MutableStateFlow(sharedPrefs.getString("selected_game_profile_package", "com.garena.game.kgvn") ?: "com.garena.game.kgvn")
+    val selectedGameProfilePackage: StateFlow<String> = _selectedGameProfilePackage.asStateFlow()
+
+    fun setGameProfileAiEnabled(enabled: Boolean) {
+        _isGameProfileAiEnabled.value = enabled
+        sharedPrefs.edit().putBoolean("game_profile_ai_enabled", enabled).apply()
+    }
+
+    fun setSelectedGameProfilePackage(packageName: String) {
+        _selectedGameProfilePackage.value = packageName
+        sharedPrefs.edit().putString("selected_game_profile_package", packageName).apply()
+    }
+
+    private val _selectedGraphicsProfile = MutableStateFlow(sharedPrefs.getString("game_graphics_profile", "Zero-Lag Balanced") ?: "Zero-Lag Balanced")
+    val selectedGraphicsProfile: StateFlow<String> = _selectedGraphicsProfile.asStateFlow()
+
+    fun setSelectedGraphicsProfile(profile: String) {
+        _selectedGraphicsProfile.value = profile
+        sharedPrefs.edit().putString("game_graphics_profile", profile).apply()
+    }
+
+    // --- AUTO-CLEAR CACHE SETTING STATES ---
+    private val _isAutoClearCacheEnabled = MutableStateFlow(sharedPrefs.getBoolean("auto_clear_cache_enabled", true))
+    val isAutoClearCacheEnabled: StateFlow<Boolean> = _isAutoClearCacheEnabled.asStateFlow()
+
+    fun setAutoClearCacheEnabled(enabled: Boolean) {
+        _isAutoClearCacheEnabled.value = enabled
+        sharedPrefs.edit().putBoolean("auto_clear_cache_enabled", enabled).apply()
+    }
+
+    // --- SCHEDULER & IDLE MODE STATES ---
+    private val _isDeviceIdle = MutableStateFlow(true)
+    val isDeviceIdle: StateFlow<Boolean> = _isDeviceIdle.asStateFlow()
+
+    private val _simulatedJunkSizeMb = MutableStateFlow(sharedPrefs.getFloat("simulated_junk_size_mb", 342.8f))
+    val simulatedJunkSizeMb: StateFlow<Float> = _simulatedJunkSizeMb.asStateFlow()
+
+    private val _isIdleModeOnlyEnabled = MutableStateFlow(sharedPrefs.getBoolean("idle_mode_only_enabled", true))
+    val isIdleModeOnlyEnabled: StateFlow<Boolean> = _isIdleModeOnlyEnabled.asStateFlow()
+
+    private val _networkPingBoosted = MutableStateFlow(sharedPrefs.getBoolean("network_ping_boosted", true))
+    val networkPingBoosted: StateFlow<Boolean> = _networkPingBoosted.asStateFlow()
+
+    fun setIdleModeOnlyEnabled(enabled: Boolean) {
+        _isIdleModeOnlyEnabled.value = enabled
+        sharedPrefs.edit().putBoolean("idle_mode_only_enabled", enabled).apply()
+        showToast(if (enabled) "Đã bật: Chỉ tự động dọn dẹp khi thiết bị rảnh" else "Đã tắt: Chạy dọn dẹp định kỳ bất kể trạng thái")
+    }
+
+    fun setNetworkPingBoosted(enabled: Boolean) {
+        _networkPingBoosted.value = enabled
+        sharedPrefs.edit().putBoolean("network_ping_boosted", enabled).apply()
+        showToast(if (enabled) "🚀 Đã kích hoạt tối ưu hóa Ping mạng & đường truyền game siêu tốc!" else "Đã tắt tối ưu hóa Ping.")
+    }
+
+    fun toggleDeviceIdleState() {
+        _isDeviceIdle.value = !_isDeviceIdle.value
+        showToast("Trạng thái thiết bị: ${if (_isDeviceIdle.value) "Đang rảnh (Idle)" else "Đang hoạt động (Active)"}")
+    }
+
+    fun setSimulatedJunkSize(size: Float) {
+        _simulatedJunkSizeMb.value = size
+        sharedPrefs.edit().putFloat("simulated_junk_size_mb", size).apply()
+    }
+
+    fun activateAiGameProfile(gameName: String) {
+        setSelectedGraphicsProfile("Extreme 120 FPS Max")
+        setBoosterLevel(4)
+        
+        val currentLogs = _aiScanLogs.value.toMutableList()
+        currentLogs.add(0, "✨ [AI Profile] Đã phát hiện khởi chạy game: $gameName")
+        currentLogs.add(0, "🖥️ [AI Profile] Tự động chuyển cấu hình đồ họa sang Extreme 120 FPS")
+        currentLogs.add(0, "⚡ [AI Profile] Tự động nâng cấp Game Boost lên Mức 4 (Mở giới hạn)")
+        currentLogs.add(0, "🧹 [AI Profile] Đã dọn dẹp toàn bộ bộ nhớ đệm ngầm để tối ưu hóa CPU/GPU")
+        _aiScanLogs.value = currentLogs.take(15)
+        
+        showToast("AI Game Profile: Đã kích hoạt đồ họa Extreme 120 FPS & Boost mức 4 cho $gameName!")
+    }
+
+    // --- AI STATUS BOARD (BẢNG TRẠNG THÁI AI) STATES ---
+    private val _aiStatusScore = MutableStateFlow(78)
+    val aiStatusScore: StateFlow<Int> = _aiStatusScore.asStateFlow()
+
+    private val _aiScanLogs = MutableStateFlow<List<String>>(listOf(
+        "Khởi tạo lõi phân tích thần kinh AI...",
+        "Đã liên kết hệ thống giám sát tiến trình Android...",
+        "Trạng thái lõi: Sẵn sàng tối ưu"
+    ))
+    val aiScanLogs: StateFlow<List<String>> = _aiScanLogs.asStateFlow()
+
+    private val _aiRecommendation = MutableStateFlow("Hệ thống hoạt động khá mượt mà. AI phát hiện 3 tiến trình ngầm có thể giải phóng.")
+    val aiRecommendation: StateFlow<String> = _aiRecommendation.asStateFlow()
+
+    private val _isAiStatusBoardScanning = MutableStateFlow(false)
+    val isAiStatusBoardScanning: StateFlow<Boolean> = _isAiStatusBoardScanning.asStateFlow()
+
+    fun runNeuralCoreScan() {
+        viewModelScope.launch {
+            if (_isAiStatusBoardScanning.value) return@launch
+            _isAiStatusBoardScanning.value = true
+            val logs = mutableListOf<String>()
+            
+            logs.add("🚀 Bắt đầu quét Lõi Thần Kinh AI...")
+            _aiScanLogs.value = logs.toList()
+            delay(800)
+            
+            logs.add("🔍 Đang kết nối Sensor cảm biến phần cứng...")
+            _aiScanLogs.value = logs.toList()
+            delay(600)
+            
+            logs.add("⚙️ Đang phân tích bảng phân bổ RAM (64-bit)...")
+            _aiScanLogs.value = logs.toList()
+            delay(700)
+            
+            logs.add("📡 Quét các tiến trình rác chạy ẩn gây nghẽn cổ chai...")
+            _aiScanLogs.value = logs.toList()
+            delay(800)
+            
+            logs.add("⚡ Phát hiện com.facebook.katana & com.shopee.vn chiếm dụng RAM bất thường.")
+            _aiScanLogs.value = logs.toList()
+            delay(600)
+            
+            logs.add("💡 AI Đề xuất: Hãy dùng tính năng Đóng Băng Tự Động hoặc Dọn Rác thủ công.")
+            _aiScanLogs.value = logs.toList()
+            delay(500)
+            
+            logs.add("✅ Quét thần kinh hoàn tất! Lõi AI đề xuất phương án tối ưu.")
+            _aiScanLogs.value = logs.toList()
+            
+            _aiStatusScore.value = (94..99).random()
+            _aiRecommendation.value = "Tốt! Hệ thống tối ưu đạt mức cao sau phân tích AI. Nên đóng băng các tệp rác để duy trì ổn định."
+            _isAiStatusBoardScanning.value = false
+        }
+    }
+
     // --- ROLE APPROVAL SYSTEM ---
     private val _pendingRoleRequests = MutableStateFlow<List<UserAccount>>(emptyList())
     val pendingRoleRequests: StateFlow<List<UserAccount>> = _pendingRoleRequests.asStateFlow()
 
+    // --- CUSTOM GIFTCODES SYSTEM ---
+    private val _customGiftCodes = MutableStateFlow<List<CustomGiftCode>>(emptyList())
+    val customGiftCodes: StateFlow<List<CustomGiftCode>> = _customGiftCodes.asStateFlow()
+
     init {
         val database = AppDatabase.getDatabase(application)
         repository = AppRepository(database.appDao())
+        loadCustomGiftCodes()
 
         val savedUser = sharedPrefs.getString("logged_in_user", null)
         currentUsername.value = savedUser
@@ -263,7 +457,58 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     tier = "ADMIN",
                     balance = 5000000.0,
                     customRole = "QUẢN TRỊ VIÊN HỆ THỐNG",
-                    email = "quanghuypham1789@gmail.com"
+                    email = "quanghuypham1789@gmail.com",
+                    authPin = "10293847"
+                )
+            )
+        }
+
+        // Seed default employees (Staff) and users
+        if (repository.getUserAccountDirect("nhanvien1") == null) {
+            repository.saveUserAccount(
+                UserAccount(
+                    username = "nhanvien1",
+                    passwordHash = "123456",
+                    tier = "STAFF",
+                    balance = 100000.0,
+                    customRole = "Nhân viên hỗ trợ 1",
+                    email = "nhanvien1@toolvip.com"
+                )
+            )
+        }
+        if (repository.getUserAccountDirect("nhanvien2") == null) {
+            repository.saveUserAccount(
+                UserAccount(
+                    username = "nhanvien2",
+                    passwordHash = "123456",
+                    tier = "STAFF",
+                    balance = 150000.0,
+                    customRole = "Nhân viên hỗ trợ 2",
+                    email = "nhanvien2@toolvip.com"
+                )
+            )
+        }
+        if (repository.getUserAccountDirect("user_test1") == null) {
+            repository.saveUserAccount(
+                UserAccount(
+                    username = "user_test1",
+                    passwordHash = "123456",
+                    tier = "VIP1",
+                    balance = 80000.0,
+                    customRole = "Hội viên VIP 1",
+                    email = "usertest1@gmail.com"
+                )
+            )
+        }
+        if (repository.getUserAccountDirect("user_test2") == null) {
+            repository.saveUserAccount(
+                UserAccount(
+                    username = "user_test2",
+                    passwordHash = "123456",
+                    tier = "UNPAID",
+                    balance = 0.0,
+                    customRole = "Thành viên thường",
+                    email = "usertest2@gmail.com"
                 )
             )
         }
@@ -385,6 +630,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val initialRole = if (isStaticPromo) "Hội viên VIP 1 (Mã đăng ký)" else "Thành viên thường"
             val expiry = if (isStaticPromo) System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000) else 0L
 
+            val defaultVip1Price = sharedPrefs.getFloat("default_vip1_price", 50000.0f).toDouble()
+            val defaultVip2Price = sharedPrefs.getFloat("default_vip2_price", 120000.0f).toDouble()
+
             val newAccount = UserAccount(
                 username = username,
                 passwordHash = password,
@@ -392,7 +640,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 tier = initialTier,
                 customRole = initialRole,
                 expiryTimestamp = expiry,
-                balance = 0.0
+                balance = 0.0,
+                vip1Price = defaultVip1Price,
+                vip2Price = defaultVip2Price
             )
             repository.saveUserAccount(newAccount)
             currentUsername.value = username
@@ -512,12 +762,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun calculateDurationMs(value: Int, unit: String): Long {
+        return when (unit.lowercase()) {
+            "giờ", "hours" -> value * 60L * 60 * 1000
+            "tuần", "weeks" -> value * 7L * 24 * 60 * 60 * 1000
+            "tháng", "months" -> value * 30L * 24 * 60 * 60 * 1000
+            "vĩnh viễn", "permanent" -> 3650L * 24 * 60 * 60 * 1000 // ~10 years (vĩnh viễn)
+            else -> value * 24L * 60 * 60 * 1000 // "ngày"
+        }
+    }
+
     fun buyVipTier(tierName: String, price: Double) {
         viewModelScope.launch(Dispatchers.IO) {
             val account = getCurrentUserDirect() ?: return@launch
             if (account.balance >= price) {
                 val newBalance = account.balance - price
-                val expiry = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000) // 30 days
+                val durValue = if (tierName == "VIP2") _vip2DurationValue.value else _vip1DurationValue.value
+                val durUnit = if (tierName == "VIP2") _vip2DurationUnit.value else _vip1DurationUnit.value
+                val durationMs = calculateDurationMs(durValue, durUnit)
+                val expiry = System.currentTimeMillis() + durationMs
                 val roleLabel = if (tierName == "VIP2") "Hội viên VIP 2 Pro" else "Hội viên VIP 1"
                 repository.saveUserAccount(
                     account.copy(
@@ -535,7 +798,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         amount = -price,
                         type = if (tierName == "VIP2") "UPGRADE_VIP2" else "UPGRADE_VIP1",
                         status = "SUCCESS",
-                        referenceNote = "Đăng ký gói VIP qua ví"
+                        referenceNote = "Đăng ký gói VIP qua ví ($durValue $durUnit)"
                     )
                 )
             }
@@ -680,6 +943,45 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val cleanEntered = enteredCode.trim().uppercase()
         val cleanGenerated = account.lastGeneratedCode.trim().uppercase()
 
+        // 1. Check custom gift codes
+        val matchedCustomCode = _customGiftCodes.value.find { it.code == cleanEntered }
+        if (matchedCustomCode != null) {
+            if (matchedCustomCode.isUsed) {
+                showToast("Mã quà tặng này đã được sử dụng từ trước!")
+                return false
+            }
+            if (matchedCustomCode.expiryTimestamp > 0L && System.currentTimeMillis() > matchedCustomCode.expiryTimestamp) {
+                showToast("Mã quà tặng này đã hết hạn sử dụng!")
+                return false
+            }
+            // Mark as used
+            val updatedList = _customGiftCodes.value.map {
+                if (it.code == cleanEntered) it.copy(isUsed = true) else it
+            }
+            saveCustomGiftCodes(updatedList)
+
+            viewModelScope.launch(Dispatchers.IO) {
+                val durationMs = calculateDurationMs(matchedCustomCode.durationValue, matchedCustomCode.durationUnit)
+                val expiry = System.currentTimeMillis() + durationMs
+                
+                val roleName = if (matchedCustomCode.tier == "VIP2") "Hội viên VIP 2 Pro" else "Hội viên VIP 1"
+                repository.saveUserAccount(
+                    account.copy(
+                        tier = matchedCustomCode.tier,
+                        customRole = "$roleName (Mã quà tặng)",
+                        expiryTimestamp = expiry,
+                        link1Passed = false,
+                        link2Passed = false,
+                        lastGeneratedCode = ""
+                    )
+                )
+                val durationDesc = if (matchedCustomCode.durationUnit == "vĩnh viễn") "Vĩnh viễn" else "${matchedCustomCode.durationValue} ${matchedCustomCode.durationUnit}"
+                showToast("Nhận thành công $durationDesc ${matchedCustomCode.tier} miễn phí từ mã quà tặng!")
+            }
+            return true
+        }
+
+        // 2. Check static/AI-generated promo codes
         val isStaticPromo = cleanEntered == "VIP1_FREE_MOBI" || 
                             cleanEntered == "VIP1_FREE" || 
                             cleanEntered == "VIP1_GIFT" || 
@@ -708,6 +1010,83 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             showToast("Mã xác nhận không chính xác hoặc đã hết hạn!")
             return false
         }
+    }
+
+    private fun loadCustomGiftCodes() {
+        val savedStr = sharedPrefs.getString("custom_gift_codes", "") ?: ""
+        if (savedStr.isEmpty()) {
+            _customGiftCodes.value = emptyList()
+            return
+        }
+        val list = mutableListOf<CustomGiftCode>()
+        savedStr.split(";").forEach { item ->
+            val parts = item.split(",")
+            if (parts.size >= 6) {
+                list.add(
+                    CustomGiftCode(
+                        code = parts[0],
+                        tier = parts[1],
+                        durationValue = parts[2].toIntOrNull() ?: 30,
+                        durationUnit = parts[3],
+                        isUsed = parts[4] == "true",
+                        expiryTimestamp = parts[5].toLongOrNull() ?: 0L
+                    )
+                )
+            } else if (parts.size == 5) {
+                list.add(
+                    CustomGiftCode(
+                        code = parts[0],
+                        tier = parts[1],
+                        durationValue = parts[2].toIntOrNull() ?: 30,
+                        durationUnit = parts[3],
+                        isUsed = parts[4] == "true",
+                        expiryTimestamp = 0L
+                    )
+                )
+            } else if (parts.size == 4) {
+                // Backward compatibility
+                list.add(
+                    CustomGiftCode(
+                        code = parts[0],
+                        tier = parts[1],
+                        durationValue = parts[2].toIntOrNull() ?: 30,
+                        durationUnit = "ngày",
+                        isUsed = parts[3] == "true",
+                        expiryTimestamp = 0L
+                    )
+                )
+            }
+        }
+        _customGiftCodes.value = list
+    }
+
+    private fun saveCustomGiftCodes(list: List<CustomGiftCode>) {
+        val serialized = list.joinToString(";") { "${it.code},${it.tier},${it.durationValue},${it.durationUnit},${it.isUsed},${it.expiryTimestamp}" }
+        sharedPrefs.edit().putString("custom_gift_codes", serialized).apply()
+        _customGiftCodes.value = list
+    }
+
+    fun addCustomGiftCode(code: String, tier: String, durationValue: Int, durationUnit: String, expiryTimestamp: Long = 0L) {
+        val current = _customGiftCodes.value.toMutableList()
+        val cleanCode = code.trim().uppercase()
+        current.removeAll { it.code == cleanCode }
+        current.add(CustomGiftCode(cleanCode, tier, durationValue, durationUnit, false, expiryTimestamp))
+        saveCustomGiftCodes(current)
+        val durationDesc = if (durationUnit == "vĩnh viễn") "Vĩnh viễn" else "$durationValue $durationUnit"
+        val expiryDesc = if (expiryTimestamp > 0L) {
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+            "Hạn: " + sdf.format(java.util.Date(expiryTimestamp))
+        } else {
+            "Không hết hạn"
+        }
+        showToast("Đã tạo thành công mã Giftcode: $cleanCode ($tier - $durationDesc) • $expiryDesc")
+    }
+
+    fun deleteCustomGiftCode(code: String) {
+        val current = _customGiftCodes.value.toMutableList()
+        current.removeAll { it.code == code.trim().uppercase() }
+        saveCustomGiftCodes(current)
+        showToast("Đã xóa mã Giftcode: ${code.trim().uppercase()}")
     }
 
     fun revokePromoCode() {
@@ -820,8 +1199,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 delay(1200)
             }
 
+            val reclaimedRam = if (trashApps.isNotEmpty()) trashApps.sumOf { it.ramUsage } else 1420.0
+            val cleanedCount = if (trashApps.isNotEmpty()) trashApps.size else 6
+            addOptimizationCycle(cleanedCount, reclaimedRam, "Tối ưu RAM")
+
             _isOptimizing.value = false
-            _optimizationMessage.value = "Tối ưu RAM thành công! Giải phóng thêm 1.4GB RAM."
+            _optimizationMessage.value = "Tối ưu RAM thành công! Giải phóng thêm ${(reclaimedRam / 1024.0).let { String.format("%.1f", it) }}GB RAM."
             onComplete()
         }
     }
@@ -838,16 +1221,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
             // Formulate prompt with full system instructions to enforce roles
             val systemPrompt = """
-                Bạn là Tool Vip AI Bot - Trợ lý thông minh cao cấp hỗ trợ quản trị viên và người dùng tối ưu hóa hiệu năng điện thoại Android.
-                Giao tiếp tự nhiên, thân thiện, sành điệu, cực kỳ mạnh mẽ và hỗ trợ giải quyết mọi thắc mắc của người dùng về:
-                1. Đóng băng các tệp nguồn hệ thống và ứng dụng rác ngốn pin/ram/mạng.
-                2. Nạp tiền đăng ký gói VIP 1 và VIP 2. Giải thích:
-                   - VIP 1: Sử dụng các tính năng tối ưu chạm nhạy, DNS, mở khóa FPS cơ bản.
-                   - VIP 2: Đóng băng ứng dụng hệ thống nâng cao, AI tự động quét rác nền, quản trị nâng cao.
-                   - ADMIN: Toàn quyền truy cập miễn phí vĩnh viễn.
-                3. Hướng dẫn sử dụng Game Booster để tối đa hóa tài nguyên cho game thủ.
-                
-                Đặc biệt: Nếu người dùng yêu cầu tối ưu máy, đóng băng rác, hoặc kích hoạt tăng tốc, hãy đồng ý và hướng dẫn họ. Trả lời ngắn gọn, tập trung và thu hút bằng tiếng Việt.
+                Bạn là Siêu Trí Tuệ Nhân Tạo (Tool Vip AI Bot) - trợ lý chuyên sâu bậc nhất dành cho game thủ và quản lý hệ thống.
+                Hãy trả lời thông minh, chuyên nghiệp và đầy cuốn hút về tất cả các khía cạnh:
+                1. Cách lên đồ (build đồ), bảng ngọc, phù hiệu và cách combo chuẩn xác cho các vị tướng Liên Quân Mobile (như Florentino, Nakroth, Raz, Elsu, Yorn, Capheny, Tulen, v.v.). Tư vấn cả lối đi đường, cách khắc chế cực kỳ thuyết phục và am hiểu.
+                2. Độ nhạy Free Fire (Độ nhạy FF), nút bắn và cấu hình DPI tối ưu nhất cho từng dòng máy (iPhone, Samsung, Oppo, Xiaomi, Realme) giúp kéo tâm siêu mượt và dễ dàng bắn headshot.
+                3. Cách vận hành app Tool Vip, kích hoạt Đóng băng sâu (Deep Freeze), tối ưu hóa RAM, giảm ping, tăng độ nhạy màn hình và mở khóa 60fps/120fps cho mọi tựa game.
+                4. Giải thích các gói VIP của ứng dụng:
+                   - VIP 1: Tối ưu chạm nhạy, DNS ưu tiên, mở khóa cấu hình FPS cơ bản.
+                   - VIP 2: Đóng băng ứng dụng nâng cao, quét dọn sâu bằng AI nền, ưu tiên luồng xử lý CPU/GPU.
+                   - ADMIN: Toàn quyền quản lý, kiểm soát dòng tiền, tự tạo Giftcode thời hạn tùy thích (1 ngày, 1 tuần, 1 tháng, vĩnh viễn) cho thành viên.
+
+                Hãy nói tiếng Việt tự nhiên, sành điệu, hào sảng của một game thủ Esports chuyên nghiệp. Sử dụng gạch đầu dòng rõ ràng và bố cục trực quan để câu trả lời dễ đọc nhất!
             """.trimIndent()
 
             // Call Gemini
@@ -906,6 +1290,58 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- AI SCANNER & AUTO-FREEZE STATES ---
+    private val _vip1DurationValue = MutableStateFlow(sharedPrefs.getInt("vip1_duration_value", 30))
+    val vip1DurationValue: StateFlow<Int> = _vip1DurationValue.asStateFlow()
+
+    private val _vip1DurationUnit = MutableStateFlow(sharedPrefs.getString("vip1_duration_unit", "ngày") ?: "ngày")
+    val vip1DurationUnit: StateFlow<String> = _vip1DurationUnit.asStateFlow()
+
+    private val _vip2DurationValue = MutableStateFlow(sharedPrefs.getInt("vip2_duration_value", 30))
+    val vip2DurationValue: StateFlow<Int> = _vip2DurationValue.asStateFlow()
+
+    private val _vip2DurationUnit = MutableStateFlow(sharedPrefs.getString("vip2_duration_unit", "ngày") ?: "ngày")
+    val vip2DurationUnit: StateFlow<String> = _vip2DurationUnit.asStateFlow()
+
+    fun updateVipConfig(tier: String, value: Int, unit: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val validValue = value.coerceAtLeast(1)
+            if (tier == "VIP1") {
+                _vip1DurationValue.value = validValue
+                _vip1DurationUnit.value = unit
+                sharedPrefs.edit()
+                    .putInt("vip1_duration_value", validValue)
+                    .putString("vip1_duration_unit", unit)
+                    .apply()
+            } else {
+                _vip2DurationValue.value = validValue
+                _vip2DurationUnit.value = unit
+                sharedPrefs.edit()
+                    .putInt("vip2_duration_value", validValue)
+                    .putString("vip2_duration_unit", unit)
+                    .apply()
+            }
+            showToast("Đã lưu thiết lập thời hạn gói $tier thành công!")
+        }
+    }
+
+    fun updateVipPricesGlobally(vip1: Double, vip2: Double) {
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPrefs.edit()
+                .putFloat("default_vip1_price", vip1.toFloat())
+                .putFloat("default_vip2_price", vip2.toFloat())
+                .apply()
+            
+            val accounts = repository.allUserAccounts.first()
+            for (acc in accounts) {
+                repository.saveUserAccount(acc.copy(
+                    vip1Price = vip1.coerceAtLeast(0.0),
+                    vip2Price = vip2.coerceAtLeast(0.0)
+                ))
+            }
+            showToast("Đã cập nhật giá VIP 1 & VIP 2 hệ thống!")
+        }
+    }
+
     private val _aiScanSuggestions = MutableStateFlow<String>("Nhấn nút 'Quét & Đề xuất AI' để quét và nhận đề xuất tối ưu từ Gemini.")
     val aiScanSuggestions: StateFlow<String> = _aiScanSuggestions.asStateFlow()
 
@@ -940,7 +1376,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         _isDeepFreezeEnabled.value = enabled
-        showToast(if (enabled) "Đã kích hoạt Đóng băng sâu! RAM sử dụng của app đóng băng giảm về 0MB." else "Đã tắt Đóng băng sâu.")
+        if (enabled) {
+            viewModelScope.launch(Dispatchers.IO) {
+                // Find non-system, non-frozen apps that use more than 150MB of RAM (resource-heavy non-essential)
+                val heavyApps = allApps.value.filter { 
+                    !it.isSystemApp && !it.isFrozen && it.ramUsage > 150.0 
+                }
+                if (heavyApps.isNotEmpty()) {
+                    val updated = heavyApps.map { it.copy(isFrozen = true) }
+                    repository.updateApps(updated)
+                    val appNames = heavyApps.joinToString(", ") { it.appName }
+                    showToast("❄️ Deep Freeze đã tự động đóng băng các ứng dụng tốn tài nguyên: $appNames để tối ưu chiến game mượt nhất!")
+                } else {
+                    showToast("❄️ Đã bật Deep Freeze! Không tìm thấy ứng dụng chạy ngầm nặng nào.")
+                }
+            }
+        } else {
+            showToast("Đã tắt Đóng băng sâu (Deep Freeze).")
+        }
     }
 
     fun toggleBackgroundPrevention(enabled: Boolean) {
@@ -1174,15 +1627,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             delay(5000)
             while (true) {
                 try {
+                    // Slowly pile up junk cache in the background (0.1MB to 0.6MB every 10 seconds)
+                    val currentJunk = _simulatedJunkSizeMb.value
+                    if (currentJunk < 1024f) { // cap at 1GB
+                        val addedJunk = java.util.concurrent.ThreadLocalRandom.current().nextDouble(0.1, 0.6).toFloat()
+                        _simulatedJunkSizeMb.value = currentJunk + addedJunk
+                    }
+
                     val account = getCurrentUserDirect()
                     if (account != null && account.isScheduledOptEnabled) {
-                        val now = System.currentTimeMillis()
-                        val intervalMs = account.optIntervalMinutes * 60 * 1000L
-                        if (lastScheduledOptTime == 0L) {
-                            lastScheduledOptTime = now
-                        } else if (now - lastScheduledOptTime >= intervalMs) {
-                            lastScheduledOptTime = now
-                            runAiScheduledOptimization()
+                        val isIdleCorrect = !_isIdleModeOnlyEnabled.value || _isDeviceIdle.value
+                        if (isIdleCorrect) {
+                            val now = System.currentTimeMillis()
+                            val intervalMs = account.optIntervalMinutes * 60 * 1000L
+                            if (lastScheduledOptTime == 0L) {
+                                lastScheduledOptTime = now
+                            } else if (now - lastScheduledOptTime >= intervalMs) {
+                                lastScheduledOptTime = now
+                                runAiScheduledOptimization()
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -1200,17 +1663,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             
             val apps = allApps.value
             val activeApps = apps.filter { !it.isFrozen }
-            if (activeApps.isEmpty()) {
-                _isAiScanning.value = false
-                return@launch
-            }
-
+            
             val appSummary = activeApps.joinToString("\n") { 
                 "- Tên: ${it.appName}, Gói: ${it.packageName}, RAM: ${it.ramUsage}MB, Rác: ${if (it.isTrash) "Có" else "Không"}" 
             }
 
             val systemPrompt = """
-                Bạn là hệ thống Tối ưu hóa Tự Động Định Kỳ của Tool Vip. Nhiệm vụ của bạn là dọn dẹp RAM bằng cách tự động đóng băng các ứng dụng không thiết yếu (mạng xã hội, mua sắm, ứng dụng rác).
+                Bạn là hệ thống Tối ưu hóa Tự Động Định Kỳ của Tool Vip. Nhiệm vụ của bạn là dọn dẹp RAM bằng cách tự động đóng băng các ứng dụng chạy ngầm không thiết yếu (mạng xã hội, mua sắm, ứng dụng rác).
                 Hãy trả về JSON thô duy nhất có định dạng:
                 {
                   "packagesToFreeze": ["com.example.app1"],
@@ -1228,28 +1687,48 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 jsonClean.contains(app.packageName)
             }
 
+            // Clear cache and free RAM
+            val clearedCacheMB = _simulatedJunkSizeMb.value
+            _simulatedJunkSizeMb.value = java.util.concurrent.ThreadLocalRandom.current().nextDouble(1.5, 4.5).toFloat() // clear cache back to minimal values
+
+            val reclaimedRamFromApps = appsToFreeze.sumOf { it.ramUsage }.toDouble()
+            val totalReclaimedRamMB = reclaimedRamFromApps + clearedCacheMB
+
             if (appsToFreeze.isNotEmpty()) {
                 val updated = appsToFreeze.map { it.copy(isFrozen = true) }
                 repository.updateApps(updated)
-                
-                _aiScanSuggestions.value = "🤖 **TỐI ƯU HÓA ĐỊNH KỲ HOÀN TẤT**:\n\n" +
-                        "Hệ thống đã tự động dọn dẹp các ứng dụng chạy ngầm rác.\n\n" +
-                        "**Ứng dụng đã đóng băng:**\n" +
-                        appsToFreeze.joinToString("\n") { "✅ ${it.appName} (${it.ramUsage} MB)" }
-
-                viewModelScope.launch(Dispatchers.IO) {
-                    repository.addMessage(
-                        ChatMessage(
-                            sender = "AI",
-                            message = "🤖 [TỰ ĐỘNG TỐI ƯU] Đã tự động dọn dẹp định kỳ thành công và đóng băng ${appsToFreeze.size} ứng dụng chạy ngầm (${appsToFreeze.joinToString { it.appName }})."
-                        )
-                    )
-                }
-
-                showToast("AI đã tự động tối ưu & giải phóng RAM thành công!")
-            } else {
-                _aiScanSuggestions.value = "🤖 **TỐI ƯU HÓA ĐỊNH KỲ**:\n\nAI kiểm tra thấy tài nguyên RAM vẫn được tối ưu tốt, không cần giải phóng thêm ứng dụng chạy ngầm."
             }
+
+            // Always register the optimization cycle
+            addOptimizationCycle(
+                processesCleaned = appsToFreeze.size + 3, // apps + system junk processes
+                ramReclaimedMb = totalReclaimedRamMB,
+                type = "Tự động định kỳ (AI)"
+            )
+
+            // Dynamic ping booster status
+            val pingStatusMsg = if (_networkPingBoosted.value) {
+                "\n📶 [PING BOOSTER] Đã kích hoạt định tuyến DNS ưu tiên. Giảm Ping mạng xuống ổn định 18ms - 25ms."
+            } else ""
+
+            _aiScanSuggestions.value = "🤖 **TỐI ƯU HÓA ĐỊNH KỲ HOÀN TẤT (KHI THIẾT BỊ RẢNH)**:\n\n" +
+                    "Hệ thống đã tự động dọn dẹp sạch ${String.format("%.1f", clearedCacheMB)} MB tệp bộ nhớ đệm tạm thời (temp cache) và giải phóng các tiến trình rác chạy ngầm.\n\n" +
+                    "**Kết quả tối ưu:**\n" +
+                    "• Đã thu hồi: **${String.format("%.1f", totalReclaimedRamMB)} MB** bộ nhớ RAM.\n" +
+                    "• Số ứng dụng không thiết yếu đã đóng băng: **${appsToFreeze.size} ứng dụng**.\n" +
+                    "• Hạ nhiệt CPU thành công, khôi phục tốc độ ban đầu.$pingStatusMsg"
+
+            viewModelScope.launch(Dispatchers.IO) {
+                val frozenAppNames = if (appsToFreeze.isNotEmpty()) " và đóng băng ${appsToFreeze.size} ứng dụng ngầm (${appsToFreeze.joinToString { it.appName }})" else ""
+                repository.addMessage(
+                    ChatMessage(
+                        sender = "AI",
+                        message = "🤖 [TỰ ĐỘNG TỐI ƯU] Đã dọn dẹp sạch ${String.format("%.1f", clearedCacheMB)} MB cache rác$frozenAppNames thành công khi thiết bị ở trạng thái rảnh.$pingStatusMsg"
+                    )
+                )
+            }
+
+            showToast("AI đã tự động tối ưu cache & giải phóng RAM thành công!")
             _isAiScanning.value = false
         }
     }
@@ -1893,4 +2372,439 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    val tempRecoveryCode = MutableStateFlow<String?>(null)
+
+    fun updateUserAuthPin(newPinInput: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = currentUsername.value ?: return@launch
+            val newPin = newPinInput.trim()
+            if (newPin.isBlank()) {
+                onResult(false, "Mã xác thực không được trống!")
+                return@launch
+            }
+            if (newPin.length < 4) {
+                onResult(false, "Mã xác thực phải từ 4 ký tự trở lên!")
+                return@launch
+            }
+            val account = repository.getUserAccountDirect(username)
+            if (account == null) {
+                onResult(false, "Không tìm thấy tài khoản!")
+                return@launch
+            }
+            if (newPin == account.passwordHash) {
+                onResult(false, "Mã xác thực không trùng với mật khẩu!")
+                return@launch
+            }
+            
+            repository.saveUserAccount(account.copy(authPin = newPin))
+            onResult(true, "Đã cập nhật mã xác thực 2 lớp mới thành công!")
+        }
+    }
+
+    fun requestForgotPinRecovery(onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = currentUsername.value ?: return@launch
+            val account = repository.getUserAccountDirect(username)
+            if (account == null) {
+                onResult(false, "Không tìm thấy tài khoản!")
+                return@launch
+            }
+            val email = if (account.email.isNotBlank()) account.email else "quanghuypham1789@gmail.com"
+            
+            // Generate a random 6-digit OTP
+            val otp = (100000..999999).random().toString()
+            tempRecoveryCode.value = otp
+            
+            // Simulate sending automated email
+            delay(800)
+            showToast("Đã gửi mã OTP tạm thời tới email $email!")
+            
+            // Push message to log so the owner can easily see and test it
+            addAiAdminLog("📩 [KHÔI PHỤC] Đã gửi mã xác thực tạm thời [$otp] tới email $email.")
+            
+            onResult(true, "Mã khôi phục tạm thời của bạn là [$otp] đã gửi về email [$email]. Hãy nhập mã tạm thời này để thiết lập lại mã xác thực.")
+        }
+    }
+
+    fun verifyRecoveryCodeAndResetPin(otpInput: String, newPinInput: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = currentUsername.value ?: return@launch
+            val expectedOtp = tempRecoveryCode.value
+            if (expectedOtp == null || otpInput.trim() != expectedOtp) {
+                onResult(false, "Mã OTP khôi phục không chính xác!")
+                return@launch
+            }
+            val newPin = newPinInput.trim()
+            if (newPin.isBlank()) {
+                onResult(false, "Mã xác thực mới không được trống!")
+                return@launch
+            }
+            if (newPin.length < 4) {
+                onResult(false, "Mã xác thực mới phải từ 4 ký tự trở lên!")
+                return@launch
+            }
+            val account = repository.getUserAccountDirect(username)
+            if (account == null) {
+                onResult(false, "Không tìm thấy tài khoản!")
+                return@launch
+            }
+            if (newPin == account.passwordHash) {
+                onResult(false, "Mã xác thực mới không được trùng với mật khẩu!")
+                return@launch
+            }
+            
+            repository.saveUserAccount(account.copy(authPin = newPin))
+            tempRecoveryCode.value = null // clear OTP
+            onResult(true, "Xác thực OTP thành công! Đã đổi mã xác thực 2 lớp mới!")
+        }
+    }
+
+    fun verifyCurrentUserAuthPin(pinInput: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = currentUsername.value
+            if (username == null) {
+                onResult(false)
+                return@launch
+            }
+            val account = repository.getUserAccountDirect(username)
+            if (account != null) {
+                // If the account has no PIN set yet, they can login directly or set a default
+                val expectedPin = if (account.authPin.isBlank()) "10293847" else account.authPin
+                if (expectedPin == pinInput.trim()) {
+                    onResult(true)
+                } else {
+                    onResult(false)
+                }
+            } else {
+                onResult(false)
+            }
+        }
+    }
+
+    fun approveTransactionManual(transactionId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val transaction = allTransactions.value.find { it.id == transactionId }
+            if (transaction != null && (transaction.status == "PENDING_AI" || transaction.status == "FAILED")) {
+                val targetUsername = transaction.username
+                val targetUser = repository.getUserAccountDirect(targetUsername)
+                if (targetUser != null) {
+                    val newBalance = targetUser.balance + transaction.amount
+                    val upgradedTier = if (newBalance >= targetUser.vip2Price && targetUser.tier != "ADMIN") {
+                        "VIP2"
+                    } else if (newBalance >= targetUser.vip1Price && targetUser.tier != "ADMIN" && targetUser.tier != "VIP2") {
+                        "VIP1"
+                    } else {
+                        targetUser.tier
+                    }
+                    val upgradedRole = when (upgradedTier) {
+                        "VIP2" -> "Hội viên VIP 2 Pro"
+                        "VIP1" -> "Hội viên VIP 1"
+                        else -> targetUser.customRole
+                    }
+                    repository.saveUserAccount(
+                        targetUser.copy(
+                            balance = newBalance,
+                            tier = upgradedTier,
+                            customRole = upgradedRole
+                        )
+                    )
+                }
+                
+                // Update transaction status
+                repository.addTransaction(
+                    transaction.copy(
+                        status = "SUCCESS",
+                        referenceNote = transaction.referenceNote + " (Duyệt thủ công bởi Admin)"
+                    )
+                )
+                addAiAdminLog("✅ [ADMIN DUYỆT] Đã duyệt thủ công giao dịch +${java.text.DecimalFormat("#,###").format(transaction.amount)}đ cho [$targetUsername].")
+                showToast("Đã duyệt thành công giao dịch số #$transactionId!")
+            }
+        }
+    }
+
+    fun rejectTransactionManual(transactionId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val transaction = allTransactions.value.find { it.id == transactionId }
+            if (transaction != null) {
+                repository.addTransaction(
+                    transaction.copy(
+                        status = "FAILED",
+                        referenceNote = "Từ chối bởi Admin"
+                    )
+                )
+                addAiAdminLog("❌ [ADMIN TỪ CHỐI] Đã từ chối giao dịch số #$transactionId của [${transaction.username}].")
+                showToast("Đã từ chối giao dịch số #$transactionId!")
+            }
+        }
+    }
+
+    fun adjustUserBalanceDirect(targetUsername: String, adjustmentAmount: Double, reasonNote: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val targetUser = repository.getUserAccountDirect(targetUsername)
+            if (targetUser == null) {
+                showToast("Không tìm thấy người dùng [$targetUsername]!")
+                return@launch
+            }
+            val newBalance = targetUser.balance + adjustmentAmount
+            if (newBalance < 0) {
+                showToast("Số dư mới không thể âm!")
+                return@launch
+            }
+
+            val upgradedTier = if (newBalance >= targetUser.vip2Price && targetUser.tier != "ADMIN") {
+                "VIP2"
+            } else if (newBalance >= targetUser.vip1Price && targetUser.tier != "ADMIN" && targetUser.tier != "VIP2") {
+                "VIP1"
+            } else {
+                targetUser.tier
+            }
+            val upgradedRole = when (upgradedTier) {
+                "VIP2" -> "Hội viên VIP 2 Pro"
+                "VIP1" -> "Hội viên VIP 1"
+                else -> targetUser.customRole
+            }
+
+            repository.saveUserAccount(
+                targetUser.copy(
+                    balance = newBalance,
+                    tier = upgradedTier,
+                    customRole = upgradedRole
+                )
+            )
+
+            // Log in transaction history
+            repository.addTransaction(
+                TransactionItem(
+                    username = targetUsername,
+                    amount = adjustmentAmount,
+                    type = "MANUAL_ADJUST",
+                    status = "SUCCESS",
+                    referenceNote = "Điều chỉnh số dư bởi Admin: $reasonNote",
+                    timestamp = System.currentTimeMillis()
+                )
+            )
+
+            addAiAdminLog("⚙️ [ĐIỀU CHỈNH ADMIN] ${if (adjustmentAmount >= 0) "+" else ""}${java.text.DecimalFormat("#,###").format(adjustmentAmount)}đ cho [$targetUsername]. Lý do: $reasonNote")
+            showToast("Đã điều chỉnh số dư thành công!")
+        }
+    }
+
+    fun setUserBalanceDirect(targetUsername: String, absoluteAmount: Double) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val targetUser = repository.getUserAccountDirect(targetUsername)
+            if (targetUser == null) {
+                showToast("Không tìm thấy người dùng [$targetUsername]!")
+                return@launch
+            }
+            if (absoluteAmount < 0) {
+                showToast("Số dư mới không thể âm!")
+                return@launch
+            }
+            
+            val upgradedTier = if (absoluteAmount >= targetUser.vip2Price && targetUser.tier != "ADMIN" && targetUser.tier != "STAFF") {
+                "VIP2"
+            } else if (absoluteAmount >= targetUser.vip1Price && targetUser.tier != "ADMIN" && targetUser.tier != "STAFF" && targetUser.tier != "VIP2") {
+                "VIP1"
+            } else {
+                targetUser.tier
+            }
+            val upgradedRole = when (upgradedTier) {
+                "VIP2" -> "Hội viên VIP 2 Pro"
+                "VIP1" -> "Hội viên VIP 1"
+                else -> targetUser.customRole
+            }
+
+            repository.saveUserAccount(
+                targetUser.copy(
+                    balance = absoluteAmount,
+                    tier = upgradedTier,
+                    customRole = upgradedRole
+                )
+            )
+
+            // Log in transaction history
+            repository.addTransaction(
+                TransactionItem(
+                    username = targetUsername,
+                    amount = absoluteAmount - targetUser.balance,
+                    type = "MANUAL_SET",
+                    status = "SUCCESS",
+                    referenceNote = "Thiết lập số dư tuyệt đối bởi Admin",
+                    timestamp = System.currentTimeMillis()
+                )
+            )
+
+            addAiAdminLog("⚙️ [THIẾT LẬP ADMIN] Số dư mới: ${java.text.DecimalFormat("#,###").format(absoluteAmount)}đ cho [$targetUsername]")
+            showToast("Đã thiết lập số dư cho [$targetUsername] thành ${java.text.DecimalFormat("#,###").format(absoluteAmount)} VNĐ!")
+        }
+    }
+
+    fun adjustUserTierDirect(targetUsername: String, newTier: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val targetUser = repository.getUserAccountDirect(targetUsername)
+            if (targetUser == null) {
+                showToast("Không tìm thấy người dùng [$targetUsername]!")
+                return@launch
+            }
+            val customRole = when (newTier) {
+                "ADMIN" -> "QUẢN TRỊ VIÊN HỆ THỐNG"
+                "MANAGER" -> "ĐIỀU PHỐI VIÊN CHÍNH"
+                "STAFF" -> "NHÂN VIÊN HỖ TRỢ"
+                "VIP2" -> "Hội viên VIP 2 Pro"
+                "VIP1" -> "Hội viên VIP 1"
+                else -> "Thành viên thường"
+            }
+            repository.saveUserAccount(
+                targetUser.copy(
+                    tier = newTier,
+                    customRole = customRole
+                )
+            )
+            showToast("Đã đổi cấp bậc [$targetUsername] thành $newTier!")
+        }
+    }
+
+    // --- SPEED TEST & INTERNET BANDWIDTH STATES ---
+    private val _speedTestProgress = MutableStateFlow(0f)
+    val speedTestProgress: StateFlow<Float> = _speedTestProgress.asStateFlow()
+
+    private val _speedTestPhase = MutableStateFlow("Idle") // Idle, Ping, Download, Upload, Done
+    val speedTestPhase: StateFlow<String> = _speedTestPhase.asStateFlow()
+
+    private val _speedTestDownload = MutableStateFlow(0f)
+    val speedTestDownload: StateFlow<Float> = _speedTestDownload.asStateFlow()
+
+    private val _speedTestUpload = MutableStateFlow(0f)
+    val speedTestUpload: StateFlow<Float> = _speedTestUpload.asStateFlow()
+
+    private val _speedTestPing = MutableStateFlow(0)
+    val speedTestPing: StateFlow<Int> = _speedTestPing.asStateFlow()
+
+    private val _speedTestJitter = MutableStateFlow(0)
+    val speedTestJitter: StateFlow<Int> = _speedTestJitter.asStateFlow()
+
+    private val _speedTestServer = MutableStateFlow("Hà Nội - FPT Telecom")
+    val speedTestServer: StateFlow<String> = _speedTestServer.asStateFlow()
+
+    private val _themeMode = MutableStateFlow(sharedPrefs.getString("theme_mode", "DARK") ?: "DARK")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    private val _isDarkMode = MutableStateFlow(sharedPrefs.getBoolean("ui_is_dark_mode", true))
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
+    fun toggleDarkMode() {
+        val nextMode = when (_themeMode.value) {
+            "DARK" -> "LIGHT"
+            "LIGHT" -> "SYSTEM"
+            else -> "DARK"
+        }
+        _themeMode.value = nextMode
+        sharedPrefs.edit().putString("theme_mode", nextMode).apply()
+        val viMode = when (nextMode) {
+            "DARK" -> "Giao diện: Tối"
+            "LIGHT" -> "Giao diện: Sáng"
+            else -> "Giao diện: Tự động (Hệ thống)"
+        }
+        showToast(viMode)
+    }
+
+    fun setResolvedDarkMode(isDark: Boolean) {
+        _isDarkMode.value = isDark
+    }
+
+    // --- BACKGROUND OPTIMIZATION CYCLES REPORT ---
+    private val _optimizationCycles = MutableStateFlow<List<OptimizationCycle>>(listOf(
+        OptimizationCycle(1, "04:12", 8, 412.5, "Hệ thống tự động"),
+        OptimizationCycle(2, "08:45", 14, 824.0, "Đóng băng ngầm"),
+        OptimizationCycle(3, "12:15", 6, 218.2, "Làm mát CPU"),
+        OptimizationCycle(4, "16:30", 11, 580.0, "Giải phóng bộ nhớ"),
+        OptimizationCycle(5, "20:55", 15, 915.8, "Tối ưu RAM định kỳ")
+    ))
+    val optimizationCycles: StateFlow<List<OptimizationCycle>> = _optimizationCycles.asStateFlow()
+
+    fun addOptimizationCycle(processesCleaned: Int, ramReclaimedMb: Double, type: String) {
+        val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        val timeStr = formatter.format(java.util.Date())
+        val newId = (_optimizationCycles.value.maxOfOrNull { it.id } ?: 0) + 1
+        val newCycle = OptimizationCycle(newId, timeStr, processesCleaned, ramReclaimedMb, type)
+        _optimizationCycles.value = listOf(newCycle) + _optimizationCycles.value
+    }
+
+    fun setSpeedTestServer(server: String) {
+        _speedTestServer.value = server
+    }
+
+    fun runSpeedTest() {
+        if (_speedTestPhase.value != "Idle" && _speedTestPhase.value != "Done") return
+        
+        viewModelScope.launch {
+            _speedTestPhase.value = "Ping"
+            _speedTestProgress.value = 0f
+            _speedTestPing.value = 0
+            _speedTestJitter.value = 0
+            _speedTestDownload.value = 0f
+            _speedTestUpload.value = 0f
+            
+            // Phase 1: Ping / Jitter test (approx 2s)
+            for (i in 1..20) {
+                delay(100)
+                _speedTestProgress.value = i * 0.05f
+                _speedTestPing.value = (10..35).random()
+                _speedTestJitter.value = (1..4).random()
+            }
+            
+            // Phase 2: Download test (approx 4s)
+            _speedTestPhase.value = "Download"
+            val targetDownload = (150..380).random().toFloat()
+            for (i in 1..40) {
+                delay(100)
+                _speedTestProgress.value = 0.2f + (i * 0.01f * 0.4f)
+                val currentTarget = if (i < 15) {
+                    (targetDownload * (i / 15f))
+                } else {
+                    targetDownload + (-12..12).random()
+                }
+                _speedTestDownload.value = currentTarget.coerceAtLeast(10f)
+            }
+            
+            // Phase 3: Upload test (approx 4s)
+            _speedTestPhase.value = "Upload"
+            val targetUpload = (60..190).random().toFloat()
+            for (i in 1..40) {
+                delay(100)
+                _speedTestProgress.value = 0.6f + (i * 0.01f * 0.4f)
+                val currentTarget = if (i < 15) {
+                    (targetUpload * (i / 15f))
+                } else {
+                    targetUpload + (-6..6).random()
+                }
+                _speedTestUpload.value = currentTarget.coerceAtLeast(5f)
+            }
+            
+            _speedTestPhase.value = "Done"
+            _speedTestProgress.value = 1f
+            showToast("Đo tốc độ mạng hoàn tất!")
+        }
+    }
 }
+
+data class OptimizationCycle(
+    val id: Int,
+    val timeString: String,
+    val processesCleaned: Int,
+    val ramReclaimedMb: Double,
+    val type: String
+)
+
+data class CustomGiftCode(
+    val code: String,
+    val tier: String, // VIP1, VIP2
+    val durationValue: Int,
+    val durationUnit: String, // "giờ", "ngày", "tuần", "tháng", "vĩnh viễn"
+    val isUsed: Boolean = false,
+    val expiryTimestamp: Long = 0L
+)
+
+

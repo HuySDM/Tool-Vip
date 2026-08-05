@@ -23,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.window.Dialog
 import com.example.data.GameAccount
 import com.example.ui.AppViewModel
 import com.example.ui.TelexConverter
@@ -42,6 +45,9 @@ fun GameShopScreen(
     val gameFilters = listOf("ALL", "Liên Quân Mobile", "Free Fire", "PUBG Mobile", "Blood Strike")
 
     var notificationMessage by remember { mutableStateOf<String?>(null) }
+    var showPinConfirmDialogForAcc by remember { mutableStateOf<GameAccount?>(null) }
+    var pinInputState by remember { mutableStateOf("") }
+    var pinErrorState by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(notificationMessage) {
         if (notificationMessage != null) {
@@ -459,8 +465,9 @@ fun GameShopScreen(
                                 onClick = {
                                     val bal = userAccount?.balance ?: 0.0
                                     if (bal >= acc.price) {
-                                        viewModel.purchaseGameAccount(acc)
-                                        notificationMessage = "Mua thành công tài khoản! Mã truy cập đã được mở khóa trực tiếp!"
+                                        pinInputState = ""
+                                        pinErrorState = null
+                                        showPinConfirmDialogForAcc = acc
                                     } else {
                                         notificationMessage = "Bạn không đủ số dư để mua! Vui lòng nạp thêm tiền tại ví nạp."
                                     }
@@ -473,6 +480,134 @@ fun GameShopScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(text = "MUA TÀI KHOẢN VỚI ${df.format(acc.price)} VND", fontWeight = FontWeight.Bold)
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showPinConfirmDialogForAcc != null) {
+        val acc = showPinConfirmDialogForAcc!!
+        var isPinVisible by remember { mutableStateOf(false) }
+
+        Dialog(onDismissRequest = { showPinConfirmDialogForAcc = null }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xFF1E293B))
+                    .border(1.dp, BorderGreen, RoundedCornerShape(20.dp))
+                    .padding(20.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(CoralVibrant.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = "Shield Security",
+                            tint = CoralVibrant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "MÃ XÁC THỰC GIAO DỊCH",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "Để mua tài khoản [${acc.accountName}], vui lòng nhập mã xác thực bảo mật 2 lớp (PIN) của bạn.",
+                        color = TextGray,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp
+                    )
+
+                    OutlinedTextField(
+                        value = pinInputState,
+                        onValueChange = {
+                            pinInputState = it
+                            pinErrorState = null
+                        },
+                        placeholder = { Text("Nhập mã PIN xác thực...", color = TextGray, fontSize = 12.sp) },
+                        visualTransformation = if (isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = BrightTurquoise,
+                            unfocusedBorderColor = BorderGreen
+                        ),
+                        trailingIcon = {
+                            IconButton(onClick = { isPinVisible = !isPinVisible }) {
+                                Icon(
+                                    imageVector = if (isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle PIN",
+                                    tint = TextGray
+                                )
+                            }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        isError = pinErrorState != null,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (pinErrorState != null) {
+                        Text(
+                            text = pinErrorState!!,
+                            color = CoralVibrant,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        TextButton(
+                            onClick = {
+                                showPinConfirmDialogForAcc = null
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("HỦY BỎ", color = TextGray, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                if (pinInputState.isNotBlank()) {
+                                    viewModel.verifyCurrentUserAuthPin(pinInputState) { success ->
+                                        if (success) {
+                                            viewModel.purchaseGameAccount(acc)
+                                            notificationMessage = "Mua thành công tài khoản! Mã truy cập đã được mở khóa trực tiếp!"
+                                            showPinConfirmDialogForAcc = null
+                                        } else {
+                                            pinErrorState = "Mã xác thực 2 lớp sai! Vui lòng kiểm tra lại."
+                                        }
+                                    }
+                                } else {
+                                    pinErrorState = "Vui lòng nhập mã PIN xác thực."
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise),
+                            modifier = Modifier.weight(1.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("XÁC NHẬN", color = DeepObsidian, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

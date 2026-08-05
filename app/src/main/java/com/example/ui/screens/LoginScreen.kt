@@ -1,5 +1,15 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.R
+import com.example.ui.theme.DeepObsidian
+import com.example.ui.theme.BrightTurquoise
+import com.example.ui.theme.DarkTealCard
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -71,7 +81,11 @@ fun LoginScreen(
                 .widthIn(max = 420.dp)
                 .verticalScroll(rememberScrollState())
                 .background(
-                    color = Color(0xFF1E293B).copy(alpha = 0.9f),
+                    color = DarkTealCard,
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .border(
+                    BorderStroke(1.5.dp, BrightTurquoise),
                     shape = RoundedCornerShape(24.dp)
                 )
                 .padding(24.dp),
@@ -80,20 +94,20 @@ fun LoginScreen(
             // App Logo or Icon Indicator
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFFEF4444), Color(0xFF3B82F6))
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    ),
+                    .size(110.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        BorderStroke(2.dp, BrightTurquoise),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .background(DeepObsidian),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.VpnKey,
-                    contentDescription = "Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(44.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.img_tool_vip_logo_v2_1785668711300),
+                    contentDescription = "Tool Vip Premium Logo",
+                    modifier = Modifier.fillMaxSize().padding(2.dp),
+                    contentScale = ContentScale.Fit
                 )
             }
 
