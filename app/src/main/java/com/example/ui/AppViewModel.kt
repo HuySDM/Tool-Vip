@@ -255,6 +255,51 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _shizukuStatus = MutableStateFlow("CHƯA KẾT NỐI") // ĐÃ KẾT NỐI SHIZUKU, CHƯA KẾT NỐI, CHƯA CÀI ĐẶT SHIZUKU, CHƯA KHỞI CHẠY
     val shizukuStatus: StateFlow<String> = _shizukuStatus.asStateFlow()
 
+    val showPrivilegeRequiredDialog = MutableStateFlow<String?>(null) // holds feature name if warning dialog should be shown
+
+    fun dismissPrivilegeDialog() {
+        showPrivilegeRequiredDialog.value = null
+    }
+
+    fun executePrivilegedCommand(command: String): Boolean {
+        // Try Root first
+        if (_rootPermissionStatus.value == "ĐÃ CẤP QUYỀN ROOT") {
+            try {
+                val process = Runtime.getRuntime().exec("su")
+                val os = java.io.DataOutputStream(process.outputStream)
+                os.writeBytes("$command\n")
+                os.writeBytes("exit\n")
+                os.flush()
+                val exitValue = process.waitFor()
+                if (exitValue == 0) return true
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
+        // Try Shizuku (if installed and running)
+        if (_shizukuStatus.value == "ĐÃ KẾT NỐI SHIZUKU") {
+            try {
+                val args = command.split(" ").toTypedArray()
+                val shizukuClass = Class.forName("rikka.shizuku.Shizuku")
+                val method = shizukuClass.getDeclaredMethod(
+                    "newProcess", 
+                    Array<String>::class.java, 
+                    Array<String>::class.java, 
+                    String::class.java
+                )
+                method.isAccessible = true
+                val process = method.invoke(null, args, null, null) as java.lang.Process
+                val exitValue = process.waitFor()
+                if (exitValue == 0) return true
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
+        return false
+    }
+
     fun checkRootAndShizukuStatus() {
         viewModelScope.launch(Dispatchers.IO) {
             // Check real root status
@@ -1366,20 +1411,51 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun freezeAllSelected() {
         viewModelScope.launch(Dispatchers.IO) {
             val appsToModify = allApps.value.filter { selectedApps.value.contains(it.packageName) }
+            val isRootGranted = _rootPermissionStatus.value == "ĐÃ CẤP QUYỀN ROOT"
+            val isShizukuActive = _shizukuStatus.value == "ĐÃ KẾT NỐI SHIZUKU"
+
+            if (!isRootGranted && !isShizukuActive) {
+                // Show Root/Shizuku dialog warning that these are simulated without Root/Shizuku
+                showPrivilegeRequiredDialog.value = "Đóng băng ứng dụng"
+            } else {
+                // Execute actual shell freeze
+                appsToModify.forEach { app ->
+                    val success = executePrivilegedCommand("pm disable-user --user 0 ${app.packageName}")
+                    if (success) {
+                        showToast("Đã đóng băng thực tế: ${app.appName}")
+                    }
+                }
+            }
+
             val updated = appsToModify.map { it.copy(isFrozen = true) }
             repository.updateApps(updated)
             selectedApps.value = emptySet()
-            showToast("Đã đóng băng tất cả ứng dụng đã chọn thành công!")
+            showToast("Đã đóng băng ${appsToModify.size} ứng dụng đã chọn thành công!")
         }
     }
 
     fun unfreezeAllSelected() {
         viewModelScope.launch(Dispatchers.IO) {
             val appsToModify = allApps.value.filter { selectedApps.value.contains(it.packageName) }
+            val isRootGranted = _rootPermissionStatus.value == "ĐÃ CẤP QUYỀN ROOT"
+            val isShizukuActive = _shizukuStatus.value == "ĐÃ KẾT NỐI SHIZUKU"
+
+            if (!isRootGranted && !isShizukuActive) {
+                showPrivilegeRequiredDialog.value = "Rã băng ứng dụng"
+            } else {
+                // Execute actual shell unfreeze
+                appsToModify.forEach { app ->
+                    val success = executePrivilegedCommand("pm enable ${app.packageName}")
+                    if (success) {
+                        showToast("Đã rã băng thực tế: ${app.appName}")
+                    }
+                }
+            }
+
             val updated = appsToModify.map { it.copy(isFrozen = false) }
             repository.updateApps(updated)
             selectedApps.value = emptySet()
-            showToast("Đã rã băng tất cả ứng dụng đã chọn thành công!")
+            showToast("Đã rã băng ${appsToModify.size} ứng dụng đã chọn thành công!")
         }
     }
 
@@ -1396,6 +1472,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             // Auto-freeze low priority/trash apps if auto-freeze is active
             val apps = allApps.value
             val trashApps = apps.filter { it.isTrash && !it.isFrozen }
+            
+            // Perform real system cache trim via Root or Shizuku if available
+            val isRootGranted = _rootPermissionStatus.value == "ĐÃ CẤP QUYỀN ROOT"
+            val isShizukuActive = _shizukuStatus.value == "ĐÃ KẾT NỐI SHIZUKU"
+            if (isRootGranted || isShizukuActive) {
+                executePrivilegedCommand("pm trim-caches 4096G")
+            }
+
             if (trashApps.isNotEmpty()) {
                 viewModelScope.launch(Dispatchers.IO) {
                     val updated = trashApps.map { it.copy(isFrozen = true) }

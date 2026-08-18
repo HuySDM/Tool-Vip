@@ -65,6 +65,8 @@ fun ToolVipApp() {
         val currentUsername by viewModel.currentUsername.collectAsState()
         val themeStyle by viewModel.themeStyle.collectAsState()
         val activeColors = remember(themeStyle, isDarkMode) { ThemeColors.getColors(themeStyle, isDarkMode) }
+        val rootStatus by viewModel.rootPermissionStatus.collectAsState()
+        val shizukuStatus by viewModel.shizukuStatus.collectAsState()
 
     var currentScreen by remember { mutableStateOf(ROUTE_BOOSTER) }
     var activeBoosterTab by remember { mutableStateOf(0) }
@@ -439,25 +441,41 @@ fun ToolVipApp() {
                                         )
                                     }
                                 }
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                ) {
-                                    // Pulsing indicator style dot
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(GlowGreen)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "SYSTEM ACTIVE • 64BIT",
-                                        color = TextGray,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.sp
-                                    )
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        // Pulsing indicator style dot
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(RoundedCornerShape(3.dp))
+                                                .background(if (rootStatus == "ĐÃ CẤP QUYỀN ROOT" || shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") GlowGreen else CoralVibrant)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "ROOT: ${if (rootStatus == "ĐÃ CẤP QUYỀN ROOT") "ĐÃ CẤP" else "CHƯA"} • SHIZUKU: ${if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") "OK" else "KO"}",
+                                            color = if (rootStatus == "ĐÃ CẤP QUYỀN ROOT" || shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") BrightTurquoise else TextGray,
+                                            fontSize = 9.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                    }
+                                    
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(top = 1.dp)
+                                    ) {
+                                        Spacer(modifier = Modifier.width(12.dp)) // Aligns under the text
+                                        Text(
+                                            text = "DEVICE: ${if (android.os.Process.is64Bit()) "64-BIT" else "32-BIT"} • ANDROID ${android.os.Build.VERSION.RELEASE}",
+                                            color = TextGray.copy(alpha = 0.8f),
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -742,6 +760,43 @@ fun ToolVipApp() {
                     dismissButton = {
                         TextButton(onClick = { showUpgradePromptForFreezer = false }) {
                             Text("HUỶ BỎ", color = TextGray)
+                        }
+                    }
+                )
+            }
+
+            val privilegeRequiredFeature by viewModel.showPrivilegeRequiredDialog.collectAsState()
+            if (privilegeRequiredFeature != null) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissPrivilegeDialog() },
+                    containerColor = DarkTealCard,
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(imageVector = Icons.Default.Terminal, contentDescription = "Terminal", tint = BrightTurquoise)
+                            Text(text = "Yêu Cầu Root hoặc Shizuku", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        }
+                    },
+                    text = {
+                        Text(
+                            text = "Tính năng '$privilegeRequiredFeature' yêu cầu thiết bị phải cấp quyền ROOT hoặc kết nối dịch vụ SHIZUKU thành công để có thể thực thi lệnh can thiệp hệ thống thực tế trên máy thật.\n\nNếu chưa liên kết, hệ thống sẽ tự động chạy chế độ MÔ PHỎNG tối ưu hóa cục bộ an toàn!",
+                            color = TextGray,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.dismissPrivilegeDialog()
+                                currentScreen = ROUTE_SETTINGS
+                            }
+                        ) {
+                            Text("LIÊN KẾT NGAY", color = BrightTurquoise, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.dismissPrivilegeDialog() }) {
+                            Text("CHẠY MÔ PHỎNG", color = TextGray)
                         }
                     }
                 )
