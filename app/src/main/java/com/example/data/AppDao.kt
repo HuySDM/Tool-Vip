@@ -69,4 +69,20 @@ interface AppDao {
 
     @Query("DELETE FROM transaction_history")
     suspend fun clearTransactionHistory()
+
+    // Imported Features (Custom Bots)
+    @Query("SELECT * FROM imported_features ORDER BY id DESC")
+    fun getAllImportedFeaturesFlow(): Flow<List<ImportedFeature>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertImportedFeature(feature: ImportedFeature)
+
+    @Query("UPDATE imported_features SET isActive = 0")
+    suspend fun deactivateAllImportedFeatures()
+
+    @Query("UPDATE imported_features SET isActive = :isActive WHERE id = :id")
+    suspend fun setImportedFeatureActive(id: Int, isActive: Boolean)
+
+    @Query("DELETE FROM imported_features WHERE id = :id")
+    suspend fun deleteImportedFeature(id: Int)
 }

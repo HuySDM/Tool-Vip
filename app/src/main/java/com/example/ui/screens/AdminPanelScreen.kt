@@ -843,14 +843,22 @@ fun AdminPanelScreen(
                     var selectedUserUsername by remember { mutableStateOf("") }
                     var userAdjustmentAmountText by remember { mutableStateOf("") }
 
-                    // Filter all accounts based on tiers
-                    val staffAccounts = remember(allUserAccounts) {
-                        allUserAccounts.filter { it.tier == "STAFF" }
-                    }
-                    val userAccounts = remember(allUserAccounts, userSearchIdQuery) {
+                    var roleFilter by remember { mutableStateOf("ALL") } // ALL, VIP1, VIP2, STAFF, ADMIN, UNPAID
+                    
+                    // Filter all accounts based on search query and role filter
+                    val filteredAccounts = remember(allUserAccounts, userSearchIdQuery, roleFilter) {
                         allUserAccounts.filter { 
-                            it.tier != "ADMIN" && it.tier != "STAFF" &&
-                            (userSearchIdQuery.isEmpty() || it.username.contains(userSearchIdQuery, ignoreCase = true))
+                            val matchesSearch = userSearchIdQuery.isEmpty() || it.username.contains(userSearchIdQuery, ignoreCase = true)
+                            val matchesRole = when (roleFilter) {
+                                "ALL" -> true
+                                "UNPAID" -> it.tier == "UNPAID" || it.tier == "FREE" || it.tier == ""
+                                "VIP1" -> it.tier == "VIP1"
+                                "VIP2" -> it.tier == "VIP2"
+                                "STAFF" -> it.tier == "STAFF"
+                                "ADMIN" -> it.tier == "ADMIN"
+                                else -> true
+                            }
+                            matchesSearch && matchesRole
                         }
                     }
 
@@ -958,6 +966,9 @@ fun AdminPanelScreen(
                         }
 
                         // --- 2. BẢNG TẦN NHÂN VIÊN (STAFF MANAGEMENT TABLE) ---
+                        val staffAccounts = remember(allUserAccounts) {
+                            allUserAccounts.filter { it.tier == "STAFF" }
+                        }
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = DarkTealCard),
@@ -1072,7 +1083,7 @@ fun AdminPanelScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // --- 3. BẢNG TẦN NGƯỜI DÙNG & TÌM KIẾM THEO ID (USER BY ID MANAGE) ---
+                        // --- 3. DÒ TÌM & ĐIỀU CHỈNH TÀI KHOẢN TOÀN DIỆN ---
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = DarkTealCard),
@@ -1084,7 +1095,7 @@ fun AdminPanelScreen(
                                     Icon(Icons.Default.PeopleOutline, "User ID Manual Setup", tint = BrightTurquoise)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "BẢNG NGƯỜI DÙNG & TÌM THEO ID",
+                                        text = "DÒ TÌM & KIỂM SOÁT TÀI KHOẢN",
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp
@@ -1092,16 +1103,16 @@ fun AdminPanelScreen(
                                 }
 
                                 Text(
-                                    text = "Tính bằng tên ID (Username) để bỏ tiền thủ công nếu AI không nhận diện tự động được.",
+                                    text = "Tìm kiếm ID, lọc theo cấp bậc để chi phối tiền tệ, cấp quyền VIP hoặc điều chỉnh nhân sự.",
                                     color = TextGray,
                                     fontSize = 10.sp
                                 )
 
-                                // Search Field
+                                // Search Input
                                 OutlinedTextField(
                                     value = userSearchIdQuery,
                                     onValueChange = { userSearchIdQuery = it },
-                                    placeholder = { Text("Nhập ID (Tên tài khoản) cần tìm...", color = TextGray, fontSize = 11.sp) },
+                                    placeholder = { Text("Nhập tên tài khoản (ID) cần tìm...", color = TextGray, fontSize = 11.sp) },
                                     leadingIcon = { Icon(Icons.Default.Search, null, tint = TextGray, modifier = Modifier.size(16.dp)) },
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = BrightTurquoise,
@@ -1114,25 +1125,59 @@ fun AdminPanelScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
+                                // Role Filter Chips
+                                val roles = listOf(
+                                    "ALL" to "Tất cả",
+                                    "UNPAID" to "FREE",
+                                    "VIP1" to "VIP 1",
+                                    "VIP2" to "VIP 2",
+                                    "STAFF" to "Nhân viên",
+                                    "ADMIN" to "Admin"
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    roles.forEach { (code, label) ->
+                                        val isSelected = roleFilter == code
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(if (isSelected) BrightTurquoise else Color.Black.copy(alpha = 0.4f))
+                                                .border(BorderStroke(0.5.dp, if (isSelected) BrightTurquoise else BorderGreen), RoundedCornerShape(16.dp))
+                                                .clickable { roleFilter = code }
+                                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                color = if (isSelected) DeepObsidian else Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+
                                 // User Table Scroll Box
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(max = 180.dp)
+                                        .heightIn(max = 160.dp)
                                         .border(BorderStroke(0.5.dp, BorderGreen.copy(alpha = 0.5f)), RoundedCornerShape(8.dp))
                                         .background(Color.Black.copy(alpha = 0.3f))
                                         .verticalScroll(rememberScrollState())
                                         .padding(4.dp)
                                 ) {
-                                    if (userAccounts.isEmpty()) {
+                                    if (filteredAccounts.isEmpty()) {
                                         Text(
-                                            text = "Không tìm thấy người dùng nào trùng khớp ID.",
+                                            text = "Không tìm thấy người dùng nào trùng khớp điều kiện.",
                                             color = TextGray,
                                             fontSize = 11.sp,
                                             modifier = Modifier.padding(8.dp)
                                         )
                                     } else {
-                                        userAccounts.forEach { usr ->
+                                        filteredAccounts.forEach { usr ->
                                             val isSelected = selectedUserUsername == usr.username
                                             Row(
                                                 modifier = Modifier
@@ -1145,11 +1190,29 @@ fun AdminPanelScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Column {
-                                                    Text(text = usr.username, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                    Text(text = "Cấp bậc: ${usr.tier}", color = TextGray, fontSize = 9.sp)
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(text = usr.username, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        val badgeColor = when (usr.tier) {
+                                                            "ADMIN" -> Color.Red
+                                                            "STAFF" -> Color.Yellow
+                                                            "VIP2" -> BrightTurquoise
+                                                            "VIP1" -> GlowGreen
+                                                            else -> TextGray
+                                                        }
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(4.dp))
+                                                                .background(badgeColor.copy(alpha = 0.2f))
+                                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                                        ) {
+                                                            Text(usr.tier, color = badgeColor, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+                                                        }
+                                                    }
+                                                    Text(text = "Email: ${usr.email.ifEmpty { "Chưa cập nhật" }}", color = TextGray, fontSize = 8.sp)
                                                 }
                                                 Text(
-                                                    text = "${String.format("%,.0f", usr.balance)} VNĐ",
+                                                    text = "${String.format("%,.0f", usr.balance)}đ",
                                                     color = if (isSelected) BrightTurquoise else GlowGreen,
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold
@@ -1160,44 +1223,152 @@ fun AdminPanelScreen(
                                 }
 
                                 if (selectedUserUsername.isNotEmpty()) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        OutlinedTextField(
-                                            value = userAdjustmentAmountText,
-                                            onValueChange = { userAdjustmentAmountText = it },
-                                            placeholder = { Text("Số tiền nạp cho ID @$selectedUserUsername...", color = TextGray, fontSize = 11.sp) },
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = BrightTurquoise,
-                                                unfocusedBorderColor = BorderGreen,
-                                                focusedTextColor = Color.White,
-                                                unfocusedTextColor = Color.White
-                                            ),
-                                            shape = RoundedCornerShape(8.dp),
-                                            singleLine = true,
-                                            modifier = Modifier.weight(1.5f),
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                                        )
-
-                                        Button(
-                                            onClick = {
-                                                val amt = userAdjustmentAmountText.toDoubleOrNull()
-                                                if (amt != null && amt >= 0) {
-                                                    viewModel.setUserBalanceDirect(selectedUserUsername, amt)
-                                                    viewModel.showToast("Nạp tiền thủ công cho ID @$selectedUserUsername thành công: ${String.format("%,.0f", amt)} VNĐ")
-                                                    userAdjustmentAmountText = ""
-                                                    selectedUserUsername = ""
-                                                } else {
-                                                    viewModel.showToast("Số tiền không hợp lệ!")
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise),
-                                            shape = RoundedCornerShape(8.dp),
-                                            modifier = Modifier.weight(1f)
+                                    val selectedUser = filteredAccounts.find { it.username == selectedUserUsername }
+                                    if (selectedUser != null) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color.Black.copy(alpha = 0.4f))
+                                                .border(BorderStroke(1.dp, BorderGreen.copy(alpha = 0.4f)), RoundedCornerShape(8.dp))
+                                                .padding(10.dp)
                                         ) {
-                                            Text("NẠP TIỀN", fontSize = 11.sp, color = DeepObsidian, fontWeight = FontWeight.Bold)
+                                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "ĐANG CHỌN: @${selectedUser.username}",
+                                                        color = BrightTurquoise,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        text = "Số dư hiện tại: ${String.format("%,.0f", selectedUser.balance)}đ",
+                                                        color = Color.White,
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+
+                                                // Incremental Add Presets
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    val presets = listOf(
+                                                        20000.0 to "+20k",
+                                                        50000.0 to "+50k",
+                                                        100000.0 to "+100k",
+                                                        500000.0 to "+500k",
+                                                        -50000.0 to "-50k"
+                                                    )
+                                                    presets.forEach { (valAmt, label) ->
+                                                        Button(
+                                                            onClick = {
+                                                                val currentBal = selectedUser.balance
+                                                                val newBal = (currentBal + valAmt).coerceAtLeast(0.0)
+                                                                viewModel.setUserBalanceDirect(selectedUser.username, newBal)
+                                                                viewModel.showToast("Đã thay đổi số dư của @${selectedUser.username} ${if (valAmt >= 0) "+" else ""}${String.format("%,.0f", valAmt)}đ")
+                                                            },
+                                                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.6f)),
+                                                            border = BorderStroke(0.5.dp, BorderGreen),
+                                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                                            shape = RoundedCornerShape(4.dp),
+                                                            modifier = Modifier.weight(1f)
+                                                        ) {
+                                                            Text(label, color = if (valAmt >= 0) GlowGreen else Color.Red, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Direct set input
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    OutlinedTextField(
+                                                        value = userAdjustmentAmountText,
+                                                        onValueChange = { userAdjustmentAmountText = it },
+                                                        placeholder = { Text("Số dư mong muốn mới...", color = TextGray, fontSize = 10.sp) },
+                                                        colors = OutlinedTextFieldDefaults.colors(
+                                                            focusedBorderColor = BrightTurquoise,
+                                                            unfocusedBorderColor = BorderGreen,
+                                                            focusedTextColor = Color.White,
+                                                            unfocusedTextColor = Color.White
+                                                        ),
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        singleLine = true,
+                                                        modifier = Modifier.weight(1.5f),
+                                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                                    )
+
+                                                    Button(
+                                                        onClick = {
+                                                            val amt = userAdjustmentAmountText.toDoubleOrNull()
+                                                            if (amt != null && amt >= 0) {
+                                                                viewModel.setUserBalanceDirect(selectedUser.username, amt)
+                                                                viewModel.showToast("Đặt số dư mới cho @${selectedUser.username} thành công: ${String.format("%,.0f", amt)}đ")
+                                                                userAdjustmentAmountText = ""
+                                                            } else {
+                                                                viewModel.showToast("Vui lòng nhập số dư hợp lệ!")
+                                                            }
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise),
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Text("ĐẶT SỐ DƯ", fontSize = 10.sp, color = DeepObsidian, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
+
+                                                // Promote Tiers
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    val upgradeRoles = listOf(
+                                                        "FREE" to "Hạ FREE",
+                                                        "VIP1" to "Lên VIP 1",
+                                                        "VIP2" to "Lên VIP 2",
+                                                        "STAFF" to "Lên STAFF"
+                                                    )
+                                                    upgradeRoles.forEach { (tierCode, tierLabel) ->
+                                                        Button(
+                                                            onClick = {
+                                                                viewModel.adjustUserTierDirect(selectedUser.username, tierCode)
+                                                            },
+                                                            colors = ButtonDefaults.buttonColors(
+                                                                containerColor = when (tierCode) {
+                                                                    "VIP1" -> GlowGreen.copy(alpha = 0.2f)
+                                                                    "VIP2" -> BrightTurquoise.copy(alpha = 0.2f)
+                                                                    "STAFF" -> Color.Yellow.copy(alpha = 0.2f)
+                                                                    else -> Color.Gray.copy(alpha = 0.2f)
+                                                                }
+                                                            ),
+                                                            border = BorderStroke(1.dp, when (tierCode) {
+                                                                "VIP1" -> GlowGreen
+                                                                "VIP2" -> BrightTurquoise
+                                                                "STAFF" -> Color.Yellow
+                                                                else -> Color.Gray
+                                                            }),
+                                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                                            shape = RoundedCornerShape(6.dp),
+                                                            modifier = Modifier.weight(1f)
+                                                        ) {
+                                                            Text(
+                                                                text = tierLabel,
+                                                                color = Color.White,
+                                                                fontSize = 8.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }

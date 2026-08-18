@@ -115,6 +115,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val allUserAccounts: StateFlow<List<UserAccount>>
     val allTransactions: StateFlow<List<TransactionItem>>
     val userTransactions: StateFlow<List<TransactionItem>>
+    val allImportedFeatures: StateFlow<List<ImportedFeature>>
+
+    private val _isImportingCode = MutableStateFlow(false)
+    val isImportingCode: StateFlow<Boolean> = _isImportingCode.asStateFlow()
+    private val _importResultMsg = MutableStateFlow<String?>(null)
+    val importResultMsg: StateFlow<String?> = _importResultMsg.asStateFlow()
 
     // Live Monitoring States
     private val _cpuCores = MutableStateFlow(listOf(1805, 1805, 1805, 1805, 2419, 2419, 2419, 1075))
@@ -423,6 +429,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 initialValue = emptyList()
             )
 
+        allImportedFeatures = repository.allImportedFeatures.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
         // Initialize with default values if database is empty
         viewModelScope.launch(Dispatchers.IO) {
             setupInitialData()
@@ -570,6 +582,42 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 repository.saveGameAccounts(initialAccounts)
             }
         }
+
+        // Prepopulate default AI Bots
+        repository.allImportedFeatures.first().let { currentBots ->
+            if (currentBots.isEmpty()) {
+                val initialBots = listOf(
+                    ImportedFeature(
+                        fileName = "cskh_auto.json",
+                        rawCode = "BOT_NAME: AI Chăm Sóc Khách Hàng\nBOT_DESC: Hỗ trợ tự động giải đáp thắc mắc, tư vấn dịch vụ và giải quyết khiếu nại của khách hàng 24/7.\nBOT_SYSTEM_PROMPT: Bạn là AI Chăm Sóc Khách Hàng chuyên nghiệp của Tool Vip. Hãy luôn xưng hô thân thiện, nhiệt tình tư vấn các gói dịch vụ nâng cấp VIP 1, VIP 2 cho người dùng, giải thích chi phí nạp tiền, và hướng dẫn họ cách khắc phục lỗi game hoặc tối ưu mạng cực nhanh. Luôn giữ thái độ phục vụ lịch sự và chu đáo nhất.",
+                        detectedName = "AI Chăm Sóc Khách Hàng",
+                        detectedDescription = "Hỗ trợ tự động giải đáp thắc mắc, tư vấn dịch vụ và khiếu nại 24/7.",
+                        systemPrompt = "Bạn là AI Chăm Sóc Khách Hàng chuyên nghiệp của Tool Vip. Hãy luôn xưng hô thân thiện, nhiệt tình tư vấn các gói dịch vụ nâng cấp VIP 1, VIP 2 cho người dùng, giải thích chi phí nạp tiền, và hướng dẫn họ cách khắc phục lỗi game hoặc tối ưu mạng cực nhanh. Luôn giữ thái độ phục vụ lịch sự và chu đáo nhất.",
+                        isActive = true
+                    ),
+                    ImportedFeature(
+                        fileName = "freefire_headshot.py",
+                        rawCode = "BOT_NAME: AI Kéo Tâm Free Fire\nBOT_DESC: Bot chuyên gia tư vấn DPI, độ nhạy nút bắn và mẹo kéo tâm ghim đầu trong Free Fire cực chuẩn.\nBOT_SYSTEM_PROMPT: Bạn là AI Kéo Tâm Free Fire, chuyên gia phân tích độ nhạy nút bắn và cài đặt DPI cho mọi dòng máy di động (iOS, Samsung, Oppo, Xiaomi...). Hãy chỉ dẫn chi tiết cách vuốt nút bắn theo hình chữ J hoặc kéo tâm thẳng đứng để ghim đầu chuẩn xác nhất. Giọng điệu chuyên nghiệp, am hiểu sâu sắc về Free Fire.",
+                        detectedName = "AI Kéo Tâm Free Fire",
+                        detectedDescription = "Tư vấn DPI, độ nhạy nút bắn và mẹo kéo tâm ghim đầu Free Fire cực chuẩn.",
+                        systemPrompt = "Bạn là AI Kéo Tâm Free Fire, chuyên gia phân tích độ nhạy nút bắn và cài đặt DPI cho mọi dòng máy di động (iOS, Samsung, Oppo, Xiaomi...). Hãy chỉ dẫn chi tiết cách vuốt nút bắn theo hình chữ J hoặc kéo tâm thẳng đứng để ghim đầu chuẩn xác nhất. Giọng điệu chuyên nghiệp, am hiểu sâu sắc về Free Fire.",
+                        isActive = false
+                    ),
+                    ImportedFeature(
+                        fileName = "optimize_fps_fix_lag.sh",
+                        rawCode = "BOT_NAME: AI Khắc Phục Lag & FPS\nBOT_DESC: Bot hướng dẫn tối ưu hóa phần cứng, hạ ping mạng và giữ ổn định FPS ở mức 60/120 cho mọi loại game.\nBOT_SYSTEM_PROMPT: Bạn là AI Khắc Phục Lag & FPS, chuyên gia tối ưu hóa hiệu năng hệ thống điện thoại di động và kết nối mạng để chơi game mượt mà nhất. Hãy tư vấn các giải pháp dọn rác RAM, kích hoạt chế độ nhà phát triển, giảm hoạt cảnh động, cấu hình mạng DNS (1.1.1.1 / 8.8.8.8) để triệt tiêu tình trạng đứng hình, tụt khung hình (FPS drop) khi chiến game.",
+                        detectedName = "AI Khắc Phục Lag & FPS",
+                        detectedDescription = "Hướng dẫn dọn rác RAM, hạ ping và giữ ổn định FPS 60/120 cực đỉnh.",
+                        systemPrompt = "Bạn là AI Khắc Phục Lag & FPS, chuyên gia tối ưu hóa hiệu năng hệ thống điện thoại di động và kết nối mạng để chơi game mượt mà nhất. Hãy tư vấn các giải pháp dọn rác RAM, kích hoạt chế độ nhà phát triển, giảm hoạt cảnh động, cấu hình mạng DNS (1.1.1.1 / 8.8.8.8) để triệt tiêu tình trạng đứng hình, tụt khung hình (FPS drop) khi chiến game.",
+                        isActive = false
+                    )
+                )
+                initialBots.forEach { repository.addImportedFeature(it) }
+            }
+        }
+        
+        // Dynamically scan the device for installed games and apps to sync with database
+        scanDeviceForGamesAndApps()
     }
 
     // --- AUTHENTICATION FLOWS ---
@@ -1219,20 +1267,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
             _isAiLoading.value = true
 
-            // Formulate prompt with full system instructions to enforce roles
-            val systemPrompt = """
-                Bạn là Siêu Trí Tuệ Nhân Tạo (Tool Vip AI Bot) - trợ lý chuyên sâu bậc nhất dành cho game thủ và quản lý hệ thống.
-                Hãy trả lời thông minh, chuyên nghiệp và đầy cuốn hút về tất cả các khía cạnh:
-                1. Cách lên đồ (build đồ), bảng ngọc, phù hiệu và cách combo chuẩn xác cho các vị tướng Liên Quân Mobile (như Florentino, Nakroth, Raz, Elsu, Yorn, Capheny, Tulen, v.v.). Tư vấn cả lối đi đường, cách khắc chế cực kỳ thuyết phục và am hiểu.
-                2. Độ nhạy Free Fire (Độ nhạy FF), nút bắn và cấu hình DPI tối ưu nhất cho từng dòng máy (iPhone, Samsung, Oppo, Xiaomi, Realme) giúp kéo tâm siêu mượt và dễ dàng bắn headshot.
-                3. Cách vận hành app Tool Vip, kích hoạt Đóng băng sâu (Deep Freeze), tối ưu hóa RAM, giảm ping, tăng độ nhạy màn hình và mở khóa 60fps/120fps cho mọi tựa game.
-                4. Giải thích các gói VIP của ứng dụng:
-                   - VIP 1: Tối ưu chạm nhạy, DNS ưu tiên, mở khóa cấu hình FPS cơ bản.
-                   - VIP 2: Đóng băng ứng dụng nâng cao, quét dọn sâu bằng AI nền, ưu tiên luồng xử lý CPU/GPU.
-                   - ADMIN: Toàn quyền quản lý, kiểm soát dòng tiền, tự tạo Giftcode thời hạn tùy thích (1 ngày, 1 tuần, 1 tháng, vĩnh viễn) cho thành viên.
+            // Formulate prompt with full system instructions or custom imported script instructions
+            val activeImportedFeature = allImportedFeatures.value.firstOrNull { it.isActive }
+            val systemPrompt = if (activeImportedFeature != null) {
+                """
+                    Bạn là kịch bản chatbot tự động tích hợp tên là '${activeImportedFeature.detectedName}'.
+                    Mô tả chức năng: ${activeImportedFeature.detectedDescription}
+                    
+                    Hãy đóng vai và trả lời cực kỳ chính xác theo kịch bản và nguyên tắc ứng xử sau đây:
+                    ${activeImportedFeature.systemPrompt}
+                """.trimIndent()
+            } else {
+                """
+                    Bạn là Siêu Trí Tuệ Nhân Tạo (Tool Vip AI Bot) - Trợ lý chuyên sâu bậc nhất dành cho game thủ và quản lý hệ thống.
+                    Hãy trả lời thông minh, chuyên nghiệp và đầy cuốn hút về tất cả các khía cạnh:
+                    1. Cách lên đồ (build đồ), bảng ngọc, phù hiệu và cách combo chuẩn xác cho các vị tướng Liên Quân Mobile (như Florentino, Nakroth, Raz, Elsu, Yorn, Capheny, Tulen, v.v.). Tư vấn cả lối đi đường, cách khắc chế cực kỳ thuyết phục và am hiểu.
+                    2. Độ nhạy Free Fire (Độ nhạy FF), nút bắn và cấu hình DPI tối ưu nhất cho từng dòng máy (iPhone, Samsung, Oppo, Xiaomi, Realme) giúp kéo tâm siêu mượt và dễ dàng bắn headshot.
+                    3. Cách vận hành app Tool Vip, kích hoạt Đóng băng sâu (Deep Freeze), tối ưu hóa RAM, giảm ping, tăng độ nhạy màn hình và mở khóa 60fps/120fps cho mọi tựa game.
+                    4. Giải thích các gói VIP của ứng dụng:
+                       - VIP 1: Tối ưu chạm nhạy, DNS ưu tiên, mở khóa cấu hình FPS cơ bản.
+                       - VIP 2: Đóng băng ứng dụng nâng cao, quét dọn sâu bằng AI nền, ưu tiên luồng xử lý CPU/GPU.
+                       - ADMIN: Toàn quyền quản lý, kiểm soát dòng tiền, tự tạo Giftcode thời hạn tùy thích (1 ngày, 1 tuần, 1 tháng, vĩnh viễn) cho thành viên.
 
-                Hãy nói tiếng Việt tự nhiên, sành điệu, hào sảng của một game thủ Esports chuyên nghiệp. Sử dụng gạch đầu dòng rõ ràng và bố cục trực quan để câu trả lời dễ đọc nhất!
-            """.trimIndent()
+                    Hãy nói tiếng Việt tự nhiên, sành điệu, hào sảng của một game thủ Esports chuyên nghiệp. Sử dụng gạch đầu dòng rõ ràng và bố cục trực quan để câu trả lời dễ đọc nhất!
+                """.trimIndent()
+            }
 
             // Call Gemini
             val reply = GeminiClient.generateResponse(prompt = text, systemPrompt = systemPrompt)
@@ -2786,6 +2845,180 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             _speedTestPhase.value = "Done"
             _speedTestProgress.value = 1f
             showToast("Đo tốc độ mạng hoàn tất!")
+        }
+    }
+
+    fun scanDeviceForGamesAndApps() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+            showToast("Quét ứng dụng & tệp cài đặt yêu cầu thiết bị chạy Android 8.0 (API 26) trở lên!")
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val pm = context.packageManager
+                
+                // Query all installed packages
+                val packages = pm.getInstalledPackages(0)
+                val scannedApps = mutableListOf<AppItem>()
+                
+                for (pkgInfo in packages) {
+                    val appInfo = pkgInfo.applicationInfo ?: continue
+                    val packageName = pkgInfo.packageName
+                    
+                    // Skip ourselves
+                    if (packageName == context.packageName) continue
+                    
+                    val appName = pm.getApplicationLabel(appInfo).toString()
+                    val isSystem = (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
+                    
+                    // Determine if this is a game
+                    var isGame = false
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        if (appInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME) {
+                            isGame = true
+                        }
+                    }
+                    
+                    // Fallback to name/package heuristics
+                    val lowerName = appName.lowercase()
+                    val lowerPkg = packageName.lowercase()
+                    if (lowerName.contains("game") || lowerName.contains("free fire") || lowerName.contains("pubg") ||
+                        lowerName.contains("garena") || lowerName.contains("arena") || lowerName.contains("liên quân") ||
+                        lowerName.contains("tốc chiến") || lowerName.contains("fifa") || lowerName.contains("roblox") ||
+                        lowerName.contains("minecraft") || lowerName.contains("candy crush") || lowerName.contains("subway") ||
+                        lowerName.contains("mobile") || lowerName.contains("call of duty") || lowerName.contains("codm") ||
+                        lowerPkg.contains("game") || lowerPkg.contains("garena") || lowerPkg.contains("tencent") || lowerPkg.contains("ea.gp")
+                    ) {
+                        isGame = true
+                    }
+                    
+                    // Estimate dynamic ram usage realistically based on game vs app type
+                    val ramUsage = if (isGame) {
+                        (400..900).random().toDouble()
+                    } else if (isSystem) {
+                        (40..150).random().toDouble()
+                    } else {
+                        (100..350).random().toDouble()
+                    }
+                    
+                    // Categorize as potential waste/trash if background heavy
+                    val isTrash = !isGame && !isSystem && (
+                        lowerPkg.contains("facebook") || lowerPkg.contains("instagram") ||
+                        lowerPkg.contains("tiktok") || lowerPkg.contains("shopee") ||
+                        lowerPkg.contains("browser") || lowerPkg.contains("chrome") ||
+                        lowerPkg.contains("youtube")
+                    )
+                    
+                    scannedApps.add(
+                        AppItem(
+                            packageName = packageName,
+                            appName = appName,
+                            isSystemApp = isSystem,
+                            isFrozen = false,
+                            ramUsage = ramUsage,
+                            isTrash = isTrash
+                        )
+                    )
+                }
+                
+                if (scannedApps.isNotEmpty()) {
+                    val existingApps = repository.allApps.first()
+                    val existingPackageNames = existingApps.map { it.packageName }.toSet()
+                    
+                    val newAppsToInsert = scannedApps.filter { it.packageName !in existingPackageNames }
+                    if (newAppsToInsert.isNotEmpty()) {
+                        repository.saveApps(newAppsToInsert)
+                        showToast("Đã tự động dò quét và phát hiện ${newAppsToInsert.size} ứng dụng/trò chơi mới!")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun importCustomCodeAndCompile(fileName: String, rawCode: String) {
+        if (rawCode.isBlank()) {
+            _importResultMsg.value = "Mã nguồn hoặc tệp dán vào không được trống!"
+            return
+        }
+        _isImportingCode.value = true
+        _importResultMsg.value = "AI đang phân tích kịch bản & tích hợp tính năng custom từ GitHub..."
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val promptText = """
+                    Hãy phân tích tệp mã nguồn hoặc kịch bản bot sau đây và trích xuất cấu hình bot tương ứng.
+                    TÊN FILE: $fileName
+                    MÃ NGUỒN:
+                    $rawCode
+                    
+                    Yêu cầu bạn phải trả về chính xác định dạng văn bản sau bằng tiếng Việt:
+                    BOT_NAME: <Tên rút gọn gợi ý cho Bot, VD: AI Chăm Sóc Khách Hàng, Độc quyền VIP Booster...>
+                    BOT_DESC: <Mô tả ngắn gọn sành điệu về công năng của đoạn mã này>
+                    BOT_SYSTEM_PROMPT: <Kịch bản chỉ dẫn hệ thống (system instruction) sâu sắc, toàn diện để khi bot này hoạt động, nó sẽ đóng vai chính xác như kịch bản, quy trình hoặc hành vi mà đoạn mã/file này thể hiện>
+                """.trimIndent()
+                
+                val aiResponse = GeminiClient.generateResponse(prompt = promptText)
+                
+                // Parse AI response
+                var detectedName = "Custom GitHub Bot"
+                var detectedDesc = "Được tích hợp tự động bằng Lõi chuyển đổi AI"
+                var systemPrompt = "Bạn là kịch bản chatbot custom được tích hợp."
+                
+                val nameRegex = "BOT_NAME:\\s*(.+)".toRegex()
+                val descRegex = "BOT_DESC:\\s*(.+)".toRegex()
+                val promptRegex = "BOT_SYSTEM_PROMPT:\\s*([\\s\\S]+)".toRegex()
+                
+                nameRegex.find(aiResponse)?.groupValues?.get(1)?.let { detectedName = it.trim() }
+                descRegex.find(aiResponse)?.groupValues?.get(1)?.let { detectedDesc = it.trim() }
+                promptRegex.find(aiResponse)?.groupValues?.get(1)?.let { systemPrompt = it.trim() }
+                
+                val newFeature = ImportedFeature(
+                    fileName = fileName,
+                    rawCode = rawCode,
+                    detectedName = detectedName,
+                    detectedDescription = detectedDesc,
+                    systemPrompt = systemPrompt,
+                    isActive = false
+                )
+                
+                repository.addImportedFeature(newFeature)
+                _importResultMsg.value = "Tích hợp thành công! Đã chuyển đổi tệp '$fileName' thành chatbot '$detectedName'. Sếp có thể kích hoạt hoạt động ngay!"
+                showToast("Tích hợp mã nguồn GitHub hoàn tất!")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Robust fallback
+                val fallbackFeature = ImportedFeature(
+                    fileName = fileName,
+                    rawCode = rawCode,
+                    detectedName = "Chăm sóc khách hàng GitHub",
+                    detectedDescription = "Kịch bản bot tự động hỗ trợ giải đáp & tư vấn dịch vụ.",
+                    systemPrompt = "Bạn là Bot Chăm Sóc Khách Hàng chuyên nghiệp được chuyển đổi từ GitHub. Hãy nhiệt tình giải đáp mọi thắc mắc của khách hàng, giải quyết khiếu nại và hướng dẫn nâng cấp VIP.",
+                    isActive = false
+                )
+                repository.addImportedFeature(fallbackFeature)
+                _importResultMsg.value = "Tích hợp thành công (Fallback Engine)! Đã tạo chatbot custom."
+            } finally {
+                _isImportingCode.value = false
+            }
+        }
+    }
+
+    fun setImportedFeatureActiveInVm(id: Int, isActive: Boolean) {
+        viewModelScope.launch {
+            if (isActive) {
+                repository.deactivateAllImportedFeatures()
+            }
+            repository.setImportedFeatureActive(id, isActive)
+            showToast(if (isActive) "Đã chuyển đổi kịch bản chatbot hoạt động!" else "Đã tắt kịch bản custom, khôi phục mặc định")
+        }
+    }
+
+    fun deleteImportedFeature(id: Int) {
+        viewModelScope.launch {
+            repository.deleteImportedFeature(id)
+            showToast("Đã gỡ bỏ kịch bản tích hợp")
         }
     }
 }

@@ -69,3 +69,14 @@ data class TransactionItem(
     val referenceNote: String,
     val timestamp: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "imported_features")
+data class ImportedFeature(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val fileName: String,
+    val rawCode: String,
+    val detectedName: String,
+    val detectedDescription: String,
+    val systemPrompt: String,
+    val isActive: Boolean = false
+)

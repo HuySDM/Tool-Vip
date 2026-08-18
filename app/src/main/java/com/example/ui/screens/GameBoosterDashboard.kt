@@ -249,34 +249,84 @@ fun GameBoosterDashboard(
                             )
                         }
 
-                        // Logo and Theme Mode indications
+                        // Logo and Theme Switcher / Mode toggler
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
+                            // Quick Dark Mode Switcher
+                            IconButton(
+                                onClick = { viewModel.toggleDarkMode() },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(activeColors.border.copy(alpha = 0.15f))
+                            ) {
+                                Icon(
+                                    imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                    contentDescription = "Chuyển chế độ Sáng/Tối",
+                                    tint = activeColors.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            // Quick Theme Palette Switcher
+                            var showThemeMenu by remember { mutableStateOf(false) }
+                            Box {
+                                IconButton(
+                                    onClick = { showThemeMenu = true },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(activeColors.border.copy(alpha = 0.15f))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Palette,
+                                        contentDescription = "Chuyển đổi chủ đề",
+                                        tint = activeColors.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showThemeMenu,
+                                    onDismissRequest = { showThemeMenu = false },
+                                    modifier = Modifier.background(activeColors.cardBg)
+                                ) {
+                                    val themeStyles = listOf(
+                                        "DeepObsidian" to "Slate Obsidian (Teal)",
+                                        "CyberpunkAurora" to "Cyberpunk Aurora (Pink)",
+                                        "NeonInferno" to "Neon Inferno (Red)",
+                                        "AcidEmerald" to "Acid Emerald (Green)",
+                                        "IceArctic" to "Ice Arctic (Blue)"
+                                    )
+                                    themeStyles.forEach { (styleKey, styleLabel) ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = styleLabel,
+                                                    color = if (themeStyle == styleKey) activeColors.primary else activeColors.textPrimary,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = if (themeStyle == styleKey) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                            },
+                                            onClick = {
+                                                viewModel.setThemeStyle(styleKey)
+                                                showThemeMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
                             Image(
                                 painter = painterResource(id = R.drawable.img_tool_vip_logo_v2_1785668711300),
                                 contentDescription = "Tool Vip Logo",
                                 modifier = Modifier
-                                    .size(42.dp)
+                                    .size(36.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .border(1.dp, activeColors.primary.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                             )
-
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(activeColors.primary.copy(alpha = 0.15f))
-                                    .border(1.dp, activeColors.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = themeStyle.uppercase(),
-                                    color = activeColors.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
-                                )
-                            }
                         }
                     }
 
@@ -2259,6 +2309,33 @@ fun GameBoosterDashboard(
                 }
             }
         }
+
+        // Floating Action Button for Emergency Mass Optimization
+        ExtendedFloatingActionButton(
+            onClick = { performMassBoost() },
+            containerColor = activeColors.primary,
+            contentColor = activeColors.background,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .navigationBarsPadding(),
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.RocketLaunch,
+                    contentDescription = "Optimize All Icon",
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            text = {
+                Text(
+                    text = "Tối ưu tất cả",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        )
     }
 }
 

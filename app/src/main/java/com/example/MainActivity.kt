@@ -27,4 +27,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // Proactively request GC and trim system cache on high memory pressure
+        if (level >= TRIM_MEMORY_RUNNING_LOW || level == TRIM_MEMORY_UI_HIDDEN) {
+            System.gc()
+        }
+    }
 }

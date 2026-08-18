@@ -73,4 +73,23 @@ class AppRepository(private val appDao: AppDao) {
     suspend fun clearAllTransactions() {
         appDao.clearTransactionHistory()
     }
+
+    // Imported Features (Custom Bots)
+    val allImportedFeatures: Flow<List<ImportedFeature>> = appDao.getAllImportedFeaturesFlow()
+
+    suspend fun addImportedFeature(feature: ImportedFeature) {
+        appDao.insertImportedFeature(feature)
+    }
+
+    suspend fun deactivateAllImportedFeatures() {
+        appDao.deactivateAllImportedFeatures()
+    }
+
+    suspend fun setImportedFeatureActive(id: Int, isActive: Boolean) {
+        appDao.setImportedFeatureActive(id, isActive)
+    }
+
+    suspend fun deleteImportedFeature(id: Int) {
+        appDao.deleteImportedFeature(id)
+    }
 }
