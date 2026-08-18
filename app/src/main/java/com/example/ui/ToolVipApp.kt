@@ -79,21 +79,17 @@ fun ToolVipApp() {
         tier == "ADMIN" || tier == "MANAGER" || tier == "STAFF" || tier == "CTV"
     }
 
-    // Lock app on launch if the saved account is privileged
+    // Lock app on launch disabled as requested - users only authenticate once at login
     LaunchedEffect(userAccount) {
-        val tier = userAccount?.tier ?: ""
-        if (tier == "ADMIN" || tier == "MANAGER" || tier == "STAFF" || tier == "CTV") {
-            isAppLocked = true
-        }
+        isAppLocked = false
     }
 
-    // Force re-auth immediately when exiting app and returning
+    // Force re-auth disabled as requested - users only authenticate once at login
     DisposableEffect(lifecycleOwner, currentUsername) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                if (currentUsername != null && isPrivilegedUser) {
-                    isAppLocked = true
-                }
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                // Do not lock the app again
+                isAppLocked = false
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

@@ -32,6 +32,12 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val userAccount by viewModel.userAccount.collectAsState()
+    val rootStatus by viewModel.rootPermissionStatus.collectAsState()
+    val shizukuStatus by viewModel.shizukuStatus.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.checkRootAndShizukuStatus()
+    }
 
     LazyColumn(
         modifier = modifier
@@ -151,6 +157,188 @@ fun SettingsScreen(
                     ) {
                         Text(text = "Công nghệ biên dịch:", color = TextGray, fontSize = 12.sp)
                         Text(text = "AOT / JIT Code Scrambled", color = GlowGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // --- SYSTEM PERMISSIONS (ROOT & SHIZUKU) ---
+        item {
+            Text(
+                text = "QUYỀN HỆ THỐNG (ROOT & SHIZUKU)",
+                color = BrightTurquoise,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, BorderGreen)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Terminal,
+                            contentDescription = "System Console",
+                            tint = BrightTurquoise,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Bảng Liên Kết Quyền Hệ Thống",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Một số tính năng đóng băng cấp sâu và giải phóng RAM hệ thống yêu cầu đặc quyền tối cao.",
+                                color = TextGray,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Divider(color = BorderGreen.copy(alpha = 0.4f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // ROOT SECTION
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Đặc quyền ROOT (Magisk/KernelSU)",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            if (rootStatus == "ĐÃ CẤP QUYỀN ROOT") GlowGreen else CoralVibrant
+                                        )
+                                )
+                                Text(
+                                    text = rootStatus,
+                                    color = if (rootStatus == "ĐÃ CẤP QUYỀN ROOT") GlowGreen else CoralVibrant,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = { viewModel.requestRootPermissionDirectly() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (rootStatus == "ĐÃ CẤP QUYỀN ROOT") BorderGreen else BrightTurquoise,
+                                contentColor = DeepObsidian
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text(
+                                text = if (rootStatus == "ĐÃ CẤP QUYỀN ROOT") "ĐÃ CẤP" else "CẤP ROOT",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider(color = BorderGreen.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // SHIZUKU SECTION
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Dịch vụ liên kết SHIZUKU",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") GlowGreen else CoralVibrant
+                                        )
+                                )
+                                Text(
+                                    text = shizukuStatus,
+                                    color = if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") GlowGreen else CoralVibrant,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = { viewModel.requestShizukuConnectionDirectly() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") BorderGreen else BrightTurquoise,
+                                contentColor = DeepObsidian
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text(
+                                text = if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") "ĐÃ KẾT NỐI" else "KẾT NỐI",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider(color = BorderGreen.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // MANUAL SYNC BUTTON
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Thiết bị thật có thể chạy mượt mà tất cả các tính năng tối ưu.",
+                            color = TextGray,
+                            fontSize = 10.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "🔄 QUÉT LẠI",
+                            color = BrightTurquoise,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.5.sp,
+                            modifier = Modifier
+                                .clickable { viewModel.checkRootAndShizukuStatus() }
+                                .padding(4.dp)
+                        )
                     }
                 }
             }
@@ -585,6 +773,8 @@ fun SettingsScreen(
         item {
             var newUsernameState by remember(userAccount?.username) { mutableStateOf(userAccount?.username ?: "") }
             var newPasswordState by remember { mutableStateOf("") }
+            var pwOtpState by remember { mutableStateOf("") }
+            var isPwOtpSent by remember { mutableStateOf(false) }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -606,7 +796,7 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Đặt lại Tên đăng nhập và Mật khẩu bảo mật mới cho tài khoản của bạn. Sau khi đổi, hệ thống sẽ tự động đăng nhập và lưu dữ liệu mới.",
+                        text = "Đặt lại Tên đăng nhập và Mật khẩu bảo mật mới cho tài khoản của bạn. Đòi hỏi xác thực OTP gửi về Email trước khi thay đổi.",
                         color = TextGray,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
@@ -646,15 +836,71 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Row to request OTP for Password Change
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = pwOtpState,
+                            onValueChange = { pwOtpState = it },
+                            placeholder = { Text("Nhập OTP từ Email", color = TextGray, fontSize = 11.sp) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = BrightTurquoise,
+                                unfocusedBorderColor = BorderGreen
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true,
+                            modifier = Modifier.weight(1.5f)
+                        )
+
+                        Button(
+                            onClick = {
+                                viewModel.sendSecurityModificationOtp(null) { success, msg ->
+                                    viewModel.showToast(msg)
+                                    if (success) {
+                                        isPwOtpSent = true
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise.copy(alpha = 0.2f), contentColor = BrightTurquoise),
+                            border = BorderStroke(1.dp, BrightTurquoise),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            Text("GỬI MÃ OTP", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Button(
                         onClick = {
-                            viewModel.updateUserCredentials(newUsernameState, newPasswordState) { success, msg ->
-                                viewModel.showToast(msg)
-                                if (success) {
-                                    newPasswordState = ""
+                            if (newPasswordState.isBlank()) {
+                                viewModel.showToast("Vui lòng nhập mật khẩu mới!")
+                                return@Button
+                            }
+                            if (pwOtpState.isBlank()) {
+                                viewModel.showToast("Vui lòng gửi và nhập mã OTP để xác thực đổi tài khoản/MK!")
+                                return@Button
+                            }
+                            val isOtpCorrect = viewModel.verifySecurityModificationOtp(pwOtpState)
+                            if (isOtpCorrect) {
+                                viewModel.updateUserCredentials(newUsernameState, newPasswordState) { success, msg ->
+                                    viewModel.showToast(msg)
+                                    if (success) {
+                                        newPasswordState = ""
+                                        pwOtpState = ""
+                                        isPwOtpSent = false
+                                    }
                                 }
+                            } else {
+                                viewModel.showToast("Mã OTP xác thực email không chính xác hoặc đã hết hạn!")
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise, contentColor = DeepObsidian),
@@ -674,6 +920,8 @@ fun SettingsScreen(
 
             var newPinState by remember { mutableStateOf("") }
             var isPinVisible by remember { mutableStateOf(false) }
+            var pinOtpState by remember { mutableStateOf("") }
+            var isPinOtpSent by remember { mutableStateOf(false) }
 
             // Forgot PIN dialog/states
             var showRecoverySection by remember { mutableStateOf(false) }
@@ -704,7 +952,7 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Mã xác thực 2 lớp bảo vệ tài khoản khỏi truy cập trái phép. Mỗi khi khởi động lại hoặc mở lại ứng dụng, bạn sẽ cần nhập chính xác mã này.",
+                        text = "Mã xác thực 2 lớp bảo vệ tài khoản khỏi truy cập trái phép. Yêu cầu gửi và xác thực OTP qua Email liên kết trước khi thay đổi mã.",
                         color = TextGray,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
@@ -780,6 +1028,47 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // Row to request OTP for PIN update
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = pinOtpState,
+                            onValueChange = { pinOtpState = it },
+                            placeholder = { Text("Nhập OTP từ Email", color = TextGray, fontSize = 11.sp) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = CoralVibrant,
+                                unfocusedBorderColor = BorderGreen
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true,
+                            modifier = Modifier.weight(1.5f)
+                        )
+
+                        Button(
+                            onClick = {
+                                viewModel.sendSecurityModificationOtp(null) { success, msg ->
+                                    viewModel.showToast(msg)
+                                    if (success) {
+                                        isPinOtpSent = true
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant.copy(alpha = 0.2f), contentColor = CoralVibrant),
+                            border = BorderStroke(1.dp, CoralVibrant),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            Text("GỬI MÃ OTP", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -802,11 +1091,26 @@ fun SettingsScreen(
 
                         Button(
                             onClick = {
-                                viewModel.updateUserAuthPin(newPinState) { success, msg ->
-                                    viewModel.showToast(msg)
-                                    if (success) {
-                                        newPinState = ""
+                                if (newPinState.isBlank()) {
+                                    viewModel.showToast("Vui lòng nhập mã PIN mới!")
+                                    return@Button
+                                }
+                                if (pinOtpState.isBlank()) {
+                                    viewModel.showToast("Vui lòng gửi và nhập mã OTP từ Email để xác thực đổi PIN!")
+                                    return@Button
+                                }
+                                val isOtpCorrect = viewModel.verifySecurityModificationOtp(pinOtpState)
+                                if (isOtpCorrect) {
+                                    viewModel.updateUserAuthPin(newPinState) { success, msg ->
+                                        viewModel.showToast(msg)
+                                        if (success) {
+                                            newPinState = ""
+                                            pinOtpState = ""
+                                            isPinOtpSent = false
+                                        }
                                     }
+                                } else {
+                                    viewModel.showToast("Mã OTP xác thực email không chính xác hoặc đã hết hạn!")
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant),
@@ -956,16 +1260,36 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     var emailInputState by remember(emailVal) { mutableStateOf(if (isPlaceholder) "" else emailVal) }
+                    var emailOtpState by remember { mutableStateOf("") }
+                    var isEmailOtpSent by remember { mutableStateOf(false) }
 
+                    OutlinedTextField(
+                        value = emailInputState,
+                        onValueChange = { emailInputState = it },
+                        placeholder = { Text("Nhập Email mới muốn liên kết...", color = TextGray, fontSize = 11.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = BrightTurquoise,
+                            unfocusedBorderColor = BorderGreen
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Row to send OTP to the NEW email
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedTextField(
-                            value = emailInputState,
-                            onValueChange = { emailInputState = it },
-                            placeholder = { Text("Nhập Email của bạn...", color = TextGray, fontSize = 11.sp) },
+                            value = emailOtpState,
+                            onValueChange = { emailOtpState = it },
+                            placeholder = { Text("Nhập OTP gửi về Email mới", color = TextGray, fontSize = 11.sp) },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
@@ -974,23 +1298,57 @@ fun SettingsScreen(
                             ),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
-                            modifier = Modifier.weight(1.8f)
+                            modifier = Modifier.weight(1.5f)
                         )
 
                         Button(
                             onClick = {
                                 if (emailInputState.isNotBlank() && emailInputState.contains("@")) {
-                                    viewModel.updateUserEmail(emailInputState)
+                                    viewModel.sendSecurityModificationOtp(emailInputState) { success, msg ->
+                                        viewModel.showToast(msg)
+                                        if (success) {
+                                            isEmailOtpSent = true
+                                        }
+                                    }
                                 } else {
                                     viewModel.showToast("Vui lòng nhập định dạng email hợp lệ!")
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise, contentColor = DeepObsidian),
+                            colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise.copy(alpha = 0.2f), contentColor = BrightTurquoise),
+                            border = BorderStroke(1.dp, BrightTurquoise),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1.2f)
                         ) {
-                            Text("LIÊN KẾT", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("GỬI MÃ OTP", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = {
+                            if (emailInputState.isBlank() || !emailInputState.contains("@")) {
+                                viewModel.showToast("Vui lòng nhập định dạng email hợp lệ!")
+                                return@Button
+                            }
+                            if (emailOtpState.isBlank()) {
+                                viewModel.showToast("Vui lòng gửi và nhập mã OTP gửi về Email mới để xác thực liên kết!")
+                                return@Button
+                            }
+                            val isOtpCorrect = viewModel.verifySecurityModificationOtp(emailOtpState)
+                            if (isOtpCorrect) {
+                                viewModel.updateUserEmail(emailInputState)
+                                emailOtpState = ""
+                                isEmailOtpSent = false
+                            } else {
+                                viewModel.showToast("Mã OTP xác thực email mới không chính xác hoặc đã hết hạn!")
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise, contentColor = DeepObsidian),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("XÁC NHẬN LIÊN KẾT EMAIL", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

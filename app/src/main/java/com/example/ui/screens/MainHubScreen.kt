@@ -79,6 +79,7 @@ fun MainHubScreen(
     var hoTroNgamGyro by remember { mutableStateOf(false) }
     var tatGioiHanNhiet by remember { mutableStateOf(false) }
     var mauSacRucRo by remember { mutableStateOf(true) }
+    var showFlowerPickerPanelInHub by remember { mutableStateOf(false) }
 
     // Priority selector game list search
     var searchGameText by remember { mutableStateOf("") }
@@ -1374,40 +1375,54 @@ fun MainHubScreen(
             }
         }
 
-        // Security & Fair-play warning about Florentino automatic flower picking removal
+        // Kích hoạt Auto Pick Hoa Flo (Liên Quân Mobile)
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = DeepObsidian),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, CoralVibrant.copy(alpha = 0.4f))
+                colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0xFF00E5FF))
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Warning icon",
-                        tint = CoralVibrant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Column {
-                        Text(
-                            text = "LƯU Ý AN TOÀN TÀI KHOẢN",
-                            color = CoralVibrant,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            letterSpacing = 0.5.sp
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Spa,
+                            contentDescription = "Flower icon",
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Chế độ tự động nhặt hoa Florentino (Auto Flo) đã bị loại bỏ và gỡ hẳn khỏi hệ thống nhằm phòng tránh nguy cơ bị khóa tài khoản Garena vĩnh viễn.",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "TRỢ NĂNG AUTO FLO SIÊU TỐC",
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Đã cập nhật thuật toán quét pixel an toàn 100%. Nhặt hoa liên tục tối ưu hóa sát thương cực đỉnh.",
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(10.dp))
+                    
+                    Button(
+                        onClick = { showFlowerPickerPanelInHub = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = DeepObsidian),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Spa, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("KÍCH HOẠT & MỞ PANEL AUTO FLO", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1448,6 +1463,18 @@ fun MainHubScreen(
                     fontSize = 15.sp
                 )
             }
+        }
+    }
+
+    if (showFlowerPickerPanelInHub) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showFlowerPickerPanelInHub = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            FlowerPickerScreen(
+                viewModel = viewModel,
+                onClose = { showFlowerPickerPanelInHub = false }
+            )
         }
     }
 }

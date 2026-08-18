@@ -54,6 +54,10 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var promoCode by remember { mutableStateOf("") }
     
+    var showPinInputStep by remember { mutableStateOf(false) }
+    var pinValueState by remember { mutableStateOf("") }
+    var expectedPinCode by remember { mutableStateOf("") }
+    
     var errorMsg by remember { mutableStateOf("") }
     var showRecoveryDialog by remember { mutableStateOf(false) }
     var infoMsg by remember { mutableStateOf("") }
@@ -186,105 +190,77 @@ fun LoginScreen(
                 }
             }
 
-            // Username input
-            OutlinedTextField(
-                value = username,
-                onValueChange = { newValue ->
-                    // Auto apply Vietnamese Telex mapping
-                    username = TelexConverter.convert(newValue)
-                },
-                label = { Text("Tên tài khoản", color = Color.Gray) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "User",
-                        tint = Color.Gray
-                    )
-                },
-                trailingIcon = {
-                    if (username.isNotEmpty()) {
-                        IconButton(onClick = { username = "" }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear",
-                                tint = Color.Gray
-                            )
-                        }
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF3B82F6),
-                    unfocusedBorderColor = Color.Gray,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color.White.copy(alpha = 0.02f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
-                ),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("username_input"),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password input
-            OutlinedTextField(
-                value = password,
-                onValueChange = { newValue ->
-                    password = TelexConverter.convert(newValue)
-                },
-                label = { Text("Mật khẩu bảo mật", color = Color.Gray) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Password",
-                        tint = Color.Gray
-                    )
-                },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = "Visibility",
-                            tint = Color.Gray
-                        )
-                    }
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF3B82F6),
-                    unfocusedBorderColor = Color.Gray,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color.White.copy(alpha = 0.02f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
-                ),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("password_input"),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                )
-            )
-
-            if (isRegisterMode) {
-                Spacer(modifier = Modifier.height(16.dp))
+            if (showPinInputStep && !isRegisterMode) {
+                // PIN Input field
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email liên kết tài khoản", color = Color.Gray) },
+                    value = pinValueState,
+                    onValueChange = { pinValueState = it },
+                    label = { Text("Nhập mã xác thực 2 lớp (PIN)", color = Color.Gray) },
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = "Email",
+                            imageVector = Icons.Default.Security,
+                            contentDescription = "PIN",
                             tint = Color.Gray
                         )
+                    },
+                    visualTransformation = PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFEF4444),
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Color.White.copy(alpha = 0.02f),
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
+                )
+                
+                Text(
+                    text = "Tài khoản của bạn đã kích hoạt bảo mật 2 lớp. Vui lòng nhập mã xác thực (mặc định: 10293847).",
+                    color = Color.Yellow,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 8.dp).align(Alignment.Start)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                TextButton(
+                    onClick = {
+                        showPinInputStep = false
+                        pinValueState = ""
+                        errorMsg = ""
+                    }
+                ) {
+                    Text("← QUAY LẠI ĐĂNG NHẬP", color = Color.Gray, fontSize = 13.sp)
+                }
+            } else {
+                // Username input
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { newValue ->
+                        username = TelexConverter.convert(newValue)
+                    },
+                    label = { Text("Tên tài khoản", color = Color.Gray) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "User",
+                            tint = Color.Gray
+                        )
+                    },
+                    trailingIcon = {
+                        if (username.isNotEmpty()) {
+                            IconButton(onClick = { username = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear",
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF3B82F6),
@@ -297,25 +273,39 @@ fun LoginScreen(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("email_input"),
+                        .testTag("username_input"),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Password input
                 OutlinedTextField(
-                    value = promoCode,
-                    onValueChange = { promoCode = it },
-                    label = { Text("Mã Giftcode VIP 1 (Không bắt buộc)", color = Color.Gray) },
+                    value = password,
+                    onValueChange = { newValue ->
+                        password = TelexConverter.convert(newValue)
+                    },
+                    label = { Text("Mật khẩu bảo mật", color = Color.Gray) },
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Default.CardGiftcard,
-                            contentDescription = "Giftcode",
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Password",
                             tint = Color.Gray
                         )
                     },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = "Visibility",
+                                tint = Color.Gray
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF10B981),
+                        focusedBorderColor = Color(0xFF3B82F6),
                         unfocusedBorderColor = Color.Gray,
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
@@ -325,15 +315,76 @@ fun LoginScreen(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("promo_code_input"),
-                    singleLine = true
+                        .testTag("password_input"),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    )
                 )
-                Text(
-                    text = "Mẹo: Nhập VIP1_FREE hoặc VIP1_GIFT để nhận ngay VIP 1!",
-                    color = Color(0xFF10B981),
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(top = 4.dp).align(Alignment.Start)
-                )
+
+                if (isRegisterMode) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email liên kết tài khoản", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = "Email",
+                                tint = Color.Gray
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF3B82F6),
+                            unfocusedBorderColor = Color.Gray,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color.White.copy(alpha = 0.02f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("email_input"),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = promoCode,
+                        onValueChange = { promoCode = it },
+                        label = { Text("Mã Giftcode VIP 1 (Không bắt buộc)", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.CardGiftcard,
+                                contentDescription = "Giftcode",
+                                tint = Color.Gray
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF10B981),
+                            unfocusedBorderColor = Color.Gray,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color.White.copy(alpha = 0.02f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("promo_code_input"),
+                        singleLine = true
+                    )
+                    Text(
+                        text = "Mẹo: Nhập VIP1_FREE hoặc VIP1_GIFT để nhận ngay VIP 1!",
+                        color = Color(0xFF10B981),
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(top = 4.dp).align(Alignment.Start)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -357,13 +408,43 @@ fun LoginScreen(
                             }
                         }
                     } else {
-                        viewModel.login(username, password) { success, message ->
-                            isLoading = false
-                            if (success) {
-                                infoMsg = message
-                                onLoginSuccess()
+                        if (showPinInputStep) {
+                            if (pinValueState.trim() == expectedPinCode) {
+                                viewModel.login(username, password) { success, message ->
+                                    isLoading = false
+                                    if (success) {
+                                        infoMsg = message
+                                        onLoginSuccess()
+                                    } else {
+                                        errorMsg = message
+                                    }
+                                }
                             } else {
-                                errorMsg = message
+                                isLoading = false
+                                errorMsg = "Mã xác thực 2 lớp (PIN) không chính xác! Vui lòng kiểm tra lại."
+                            }
+                        } else {
+                            viewModel.verifyLoginAndGetAuthPin(username, password) { success, message, pin ->
+                                if (success) {
+                                    if (!pin.isNullOrBlank()) {
+                                        expectedPinCode = pin
+                                        showPinInputStep = true
+                                        isLoading = false
+                                    } else {
+                                        // Direct login
+                                        viewModel.login(username, password) { loginSuccess, loginMsg ->
+                                            isLoading = false
+                                            if (loginSuccess) {
+                                                onLoginSuccess()
+                                            } else {
+                                                errorMsg = loginMsg
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    isLoading = false
+                                    errorMsg = message
+                                }
                             }
                         }
                     }
@@ -381,7 +462,7 @@ fun LoginScreen(
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
                     Text(
-                        text = if (isRegisterMode) "ĐĂNG KÝ NGAY" else "ĐĂNG NHẬP HỆ THỐNG",
+                        text = if (isRegisterMode) "ĐĂNG KÝ NGAY" else if (showPinInputStep) "XÁC NHẬN PIN & ĐĂNG NHẬP" else "ĐĂNG NHẬP HỆ THỐNG",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = Color.White
@@ -397,6 +478,9 @@ fun LoginScreen(
                     isRegisterMode = !isRegisterMode
                     errorMsg = ""
                     infoMsg = ""
+                    showPinInputStep = false
+                    pinValueState = ""
+                    expectedPinCode = ""
                 }
             ) {
                 Text(

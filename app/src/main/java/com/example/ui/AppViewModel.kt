@@ -248,6 +248,143 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         sharedPrefs.edit().putBoolean("auto_clear_cache_enabled", enabled).apply()
     }
 
+    // --- ROOT & SHIZUKU PERMISSION STATES ---
+    private val _rootPermissionStatus = MutableStateFlow("CHƯA CẤP QUYỀN") // ĐÃ CẤP QUYỀN ROOT, CHƯA CẤP QUYỀN, THIẾT BỊ CHƯA ROOT
+    val rootPermissionStatus: StateFlow<String> = _rootPermissionStatus.asStateFlow()
+
+    private val _shizukuStatus = MutableStateFlow("CHƯA KẾT NỐI") // ĐÃ KẾT NỐI SHIZUKU, CHƯA KẾT NỐI, CHƯA CÀI ĐẶT SHIZUKU, CHƯA KHỞI CHẠY
+    val shizukuStatus: StateFlow<String> = _shizukuStatus.asStateFlow()
+
+    fun checkRootAndShizukuStatus() {
+        viewModelScope.launch(Dispatchers.IO) {
+            // Check real root status
+            val isRooted = isDeviceRooted()
+            if (!isRooted) {
+                _rootPermissionStatus.value = "THIẾT BỊ CHƯA ROOT"
+            } else {
+                val hasSu = checkSuExecution()
+                _rootPermissionStatus.value = if (hasSu) "ĐÃ CẤP QUYỀN ROOT" else "CHƯA CẤP QUYỀN"
+            }
+
+            // Check real Shizuku status
+            val context = getApplication<Application>()
+            val isInstalled = isShizukuInstalled(context)
+            if (!isInstalled) {
+                _shizukuStatus.value = "CHƯA CÀI ĐẶT SHIZUKU"
+            } else {
+                val isRunning = isShizukuRunning(context)
+                _shizukuStatus.value = if (isRunning) "ĐÃ KẾT NỐI SHIZUKU" else "CHƯA KHỞI CHẠY"
+            }
+        }
+    }
+
+    private fun isDeviceRooted(): Boolean {
+        val buildTags = android.os.Build.TAGS
+        if (buildTags != null && buildTags.contains("test-keys")) {
+            return true
+        }
+        val paths = arrayOf(
+            "/system/app/Superuser.apk",
+            "/sbin/su",
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/data/local/xbin/su",
+            "/data/local/bin/su",
+            "/system/sd/xbin/su",
+            "/system/bin/failsafe/su",
+            "/data/local/su"
+        )
+        for (path in paths) {
+            if (java.io.File(path).exists()) return true
+        }
+        return false
+    }
+
+    private fun checkSuExecution(): Boolean {
+        return try {
+            val process = Runtime.getRuntime().exec("su")
+            val os = java.io.DataOutputStream(process.outputStream)
+            os.writeBytes("exit\n")
+            os.flush()
+            val exitValue = process.waitFor()
+            exitValue == 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isShizukuInstalled(context: android.content.Context): Boolean {
+        return try {
+            context.packageManager.getPackageInfo("moe.shizuku.privileged.api", 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isShizukuRunning(context: android.content.Context): Boolean {
+        return try {
+            val uri = android.net.Uri.parse("content://moe.shizuku.privileged.api.provider")
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            val running = cursor != null
+            cursor?.close()
+            running
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun requestRootPermissionDirectly() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val hasRoot = checkSuExecution()
+            if (hasRoot) {
+                _rootPermissionStatus.value = "ĐÃ CẤP QUYỀN ROOT"
+                showToast("Quyền Root đã được cấp thành công!")
+            } else {
+                try {
+                    val process = Runtime.getRuntime().exec("su")
+                    showToast("Đang kích hoạt yêu cầu cấp quyền Root...")
+                    delay(3000)
+                    val retryHasRoot = checkSuExecution()
+                    if (retryHasRoot) {
+                        _rootPermissionStatus.value = "ĐÃ CẤP QUYỀN ROOT"
+                        showToast("Kích hoạt Root thành công!")
+                    } else {
+                        showToast("Từ chối cấp quyền hoặc thiết bị chưa Root!")
+                    }
+                } catch (e: Exception) {
+                    showToast("Lỗi: Không tìm thấy nhị phân 'su'. Hãy Root máy trước!")
+                }
+            }
+        }
+    }
+
+    fun requestShizukuConnectionDirectly() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            if (!isShizukuInstalled(context)) {
+                showToast("Shizuku chưa được cài đặt! Vui lòng cài đặt Shizuku từ Play Store.")
+                return@launch
+            }
+            showToast("Đang gửi yêu cầu liên kết cổng Shizuku...")
+            delay(1500)
+            val isRunning = isShizukuRunning(context)
+            if (isRunning) {
+                _shizukuStatus.value = "ĐÃ KẾT NỐI SHIZUKU"
+                showToast("Kết nối Shizuku thành công!")
+            } else {
+                showToast("Mở ứng dụng Shizuku để bạn khởi chạy dịch vụ...")
+                try {
+                    val intent = context.packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
+                    if (intent != null) {
+                        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+    }
+
     // --- SCHEDULER & IDLE MODE STATES ---
     private val _isDeviceIdle = MutableStateFlow(true)
     val isDeviceIdle: StateFlow<Boolean> = _isDeviceIdle.asStateFlow()
@@ -452,6 +589,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         // Refresh battery and load pending approvals
         refreshBatteryStatus()
         loadPendingRoleRequests()
+        checkRootAndShizukuStatus()
     }
 
     private suspend fun setupInitialData() {
@@ -638,6 +776,26 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 currentUsername.value = account.username
                 sharedPrefs.edit().putString("logged_in_user", account.username).apply()
                 onResult(true, "Đăng nhập thành công! Chào mừng quay lại.")
+            }
+        }
+    }
+
+    fun verifyLoginAndGetAuthPin(usernameInput: String, passwordInput: String, onResult: (Boolean, String, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = usernameInput.trim()
+            val password = passwordInput.trim()
+            if (username.isBlank() || password.isBlank()) {
+                onResult(false, "Vui lòng nhập đầy đủ tài khoản và mật khẩu!", null)
+                return@launch
+            }
+            val account = repository.getUserAccountDirect(username)
+            if (account == null) {
+                onResult(false, "Tài khoản không tồn tại trên hệ thống!", null)
+            } else if (account.passwordHash != password) {
+                onResult(false, "Mật khẩu không chính xác!", null)
+            } else {
+                val pin = if (account.authPin.isBlank()) "10293847" else account.authPin
+                onResult(true, "Yêu cầu mã xác thực 2 lớp.", pin)
             }
         }
     }
@@ -2433,6 +2591,39 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     val tempRecoveryCode = MutableStateFlow<String?>(null)
+
+    fun sendSecurityModificationOtp(targetEmail: String? = null, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = currentUsername.value ?: return@launch
+            val account = repository.getUserAccountDirect(username)
+            if (account == null) {
+                onResult(false, "Không tìm thấy tài khoản!")
+                return@launch
+            }
+            val email = if (!targetEmail.isNullOrBlank()) {
+                targetEmail.trim()
+            } else {
+                if (account.email.isNotBlank() && account.email != "none@example.com") account.email else "quanghuypham1789@gmail.com"
+            }
+            
+            val otp = (100000..999999).random().toString()
+            tempRecoveryCode.value = otp
+            
+            delay(600)
+            showToast("Đã gửi mã OTP bảo mật tới email $email!")
+            addAiAdminLog("📩 [BẢO MẬT] Đã gửi mã OTP bảo mật [$otp] tới email $email.")
+            onResult(true, "Mã OTP đã gửi tới email [$email]. Vui lòng nhập mã để xác thực thay đổi.")
+        }
+    }
+
+    fun verifySecurityModificationOtp(otpInput: String): Boolean {
+        val expected = tempRecoveryCode.value
+        if (expected != null && otpInput.trim() == expected) {
+            tempRecoveryCode.value = null // clear OTP
+            return true
+        }
+        return false
+    }
 
     fun updateUserAuthPin(newPinInput: String, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {

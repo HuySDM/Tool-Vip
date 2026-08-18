@@ -465,9 +465,15 @@ fun GameShopScreen(
                                 onClick = {
                                     val bal = userAccount?.balance ?: 0.0
                                     if (bal >= acc.price) {
-                                        pinInputState = ""
-                                        pinErrorState = null
-                                        showPinConfirmDialogForAcc = acc
+                                        val currentPin = userAccount?.authPin ?: ""
+                                        if (currentPin.isBlank()) {
+                                            viewModel.purchaseGameAccount(acc)
+                                            notificationMessage = "Mua thành công tài khoản! Mã truy cập đã được mở khóa trực tiếp!"
+                                        } else {
+                                            pinInputState = ""
+                                            pinErrorState = null
+                                            showPinConfirmDialogForAcc = acc
+                                        }
                                     } else {
                                         notificationMessage = "Bạn không đủ số dư để mua! Vui lòng nạp thêm tiền tại ví nạp."
                                     }
