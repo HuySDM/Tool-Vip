@@ -158,27 +158,20 @@ fun MainHubScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        // Circular Progress Indicator using Canvas
+                        // Circular Progress Indicator using native optimized CircularProgressIndicator
                         Box(
                             modifier = Modifier.size(84.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             val activeColor = BrightTurquoise
                             val inactiveColor = Color.White.copy(alpha = 0.05f)
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                drawCircle(
-                                    color = inactiveColor,
-                                    radius = size.minDimension / 2 - 4.dp.toPx(),
-                                    style = Stroke(width = 7.dp.toPx())
-                                )
-                                drawArc(
-                                    color = activeColor,
-                                    startAngle = -90f,
-                                    sweepAngle = (currentRamUsage / 100f) * 360f,
-                                    useCenter = false,
-                                    style = Stroke(width = 7.dp.toPx())
-                                )
-                            }
+                            androidx.compose.material3.CircularProgressIndicator(
+                                progress = { currentRamUsage / 100f },
+                                modifier = Modifier.fillMaxSize(),
+                                color = activeColor,
+                                strokeWidth = 7.dp,
+                                trackColor = inactiveColor
+                            )
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "$currentRamUsage%",
