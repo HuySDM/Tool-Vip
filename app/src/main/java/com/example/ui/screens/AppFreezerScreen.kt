@@ -59,6 +59,19 @@ fun AppFreezerScreen(
     var dialogTargetApp by remember { mutableStateOf<AppItem?>(null) }
     var isBatchActionFreezing by remember { mutableStateOf(true) }
     var showBatchConfirmDialog by remember { mutableStateOf(false) }
+    var showShizukuStartupDialog by remember { mutableStateOf(false) }
+
+    val shizukuStatus by viewModel.shizukuStatus.collectAsState()
+    val rootPermissionStatus by viewModel.rootPermissionStatus.collectAsState()
+
+    // Startup check for Shizuku
+    LaunchedEffect(Unit) {
+        viewModel.checkRootAndShizukuStatus()
+        delay(1200)
+        if (viewModel.shizukuStatus.value != "ĐÃ KẾT NỐI SHIZUKU" && viewModel.rootPermissionStatus.value != "ĐÃ CẤP QUYỀN ROOT") {
+            showShizukuStartupDialog = true
+        }
+    }
 
     // Cryo-File Freezer states
     val coroutineScope = rememberCoroutineScope()
@@ -1373,6 +1386,52 @@ fun AppFreezerScreen(
                     }
                 ) {
                     Text("HUỶ BỎ", color = TextGray)
+                }
+            }
+        )
+    }
+
+    if (showShizukuStartupDialog) {
+        AlertDialog(
+            onDismissRequest = { showShizukuStartupDialog = false },
+            containerColor = DarkTealCard,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = "Warning", tint = CoralVibrant)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Yêu cầu kết nối Shizuku", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            },
+            text = {
+                Text(
+                    text = "Để có thể thực hiện ĐÓNG BĂNG ứng dụng hệ thống và các tiến trình chạy ngầm thực tế trên máy thật (không qua mô phỏng), thiết bị của bạn cần có ROOT hoặc liên kết với dịch vụ SHIZUKU.\n\n" +
+                            "Hiện tại hệ thống không phát hiện thấy dịch vụ Shizuku đang hoạt động.\n\n" +
+                            "👉 Vui lòng:\n" +
+                            "1. Cài đặt ứng dụng Shizuku từ cửa hàng ứng dụng.\n" +
+                            "2. Khởi chạy Shizuku bằng gỡ lỗi không dây (Wireless Debugging).\n" +
+                            "3. Cho phép ứng dụng này truy cập Shizuku.\n\n" +
+                            "Nếu không có Root/Shizuku, ứng dụng sẽ chạy ở chế độ MÔ PHỎNG tối ưu hóa an toàn!",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.requestShizukuConnectionDirectly()
+                        showShizukuStartupDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = BrightTurquoise, contentColor = DeepObsidian)
+                ) {
+                    Text("LIÊN KẾT / MỞ SHIZUKU", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showShizukuStartupDialog = false }
+                ) {
+                    Text("CHẠY MÔ PHỎNG", color = TextGray)
                 }
             }
         )
