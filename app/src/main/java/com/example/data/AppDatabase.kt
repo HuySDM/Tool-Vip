@@ -12,9 +12,10 @@ import androidx.room.RoomDatabase
         GameAccount::class,
         ChatMessage::class,
         TransactionItem::class,
-        ImportedFeature::class
+        ImportedFeature::class,
+        CacheCleanRecord::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

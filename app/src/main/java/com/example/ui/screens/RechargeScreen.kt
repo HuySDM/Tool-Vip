@@ -95,6 +95,51 @@ fun RechargeScreen(
         }
     }
 
+    var showScreenshotUploadDialog by remember { mutableStateOf(false) }
+    var isScanningScreenshot by remember { mutableStateOf(false) }
+    var scanProgress by remember { mutableStateOf(0f) }
+    var scannedBankName by remember { mutableStateOf("") }
+    var scannedAmount by remember { mutableStateOf(0.0) }
+    var showScanSuccessDialog by remember { mutableStateOf(false) }
+
+    // Scratch Card top-up state variables
+    var activeRechargeTab by remember { mutableStateOf(0) } // 0: Chuyển khoản VietQR, 1: Nạp thẻ cào tự động
+    var cardCarrier by remember { mutableStateOf("Viettel") }
+    var cardSerialText by remember { mutableStateOf("") }
+    var cardCodeText by remember { mutableStateOf("") }
+    var cardValueText by remember { mutableStateOf("50000") }
+    var isScanningCard by remember { mutableStateOf(false) }
+    var cardScanProgress by remember { mutableStateOf(0f) }
+    var showCardScanSuccessDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isScanningScreenshot) {
+        if (isScanningScreenshot) {
+            scanProgress = 0f
+            while (scanProgress < 1f) {
+                kotlinx.coroutines.delay(50)
+                scanProgress += 0.035f
+            }
+            isScanningScreenshot = false
+            showScanSuccessDialog = true
+        }
+    }
+
+    LaunchedEffect(isScanningCard) {
+        if (isScanningCard) {
+            cardScanProgress = 0f
+            while (cardScanProgress < 1f) {
+                kotlinx.coroutines.delay(50)
+                cardScanProgress += 0.04f
+            }
+            isScanningCard = false
+            val randomVal = listOf("10000", "20000", "50000", "100000", "200000", "500000").random()
+            cardValueText = randomVal
+            cardSerialText = "1000" + (100000000..999999999).random().toString()
+            cardCodeText = (100000000000..999999999999).random().toString()
+            showCardScanSuccessDialog = true
+        }
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -2414,13 +2459,13 @@ fun RechargeScreen(
             }
         }
 
-        // 5. WALLET TOP-UP SECTION (NẠP TIỀN VÀO VÍ HỆ THỐNG)
+        // 5. WALLET TOP-UP SECTION (NẠP TIỀN VÀO VÍ HỆ THỐNG - DUAL TAB)
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = DarkTealCard),
                 shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.dp, BrightTurquoise.copy(alpha = 0.15f))
+                border = BorderStroke(1.5.dp, BrightTurquoise)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Text(
@@ -2432,109 +2477,317 @@ fun RechargeScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Chọn hoặc nhập số tiền nạp để mô phỏng thanh toán quét mã QR cực tiện lợi:",
+                        text = "Sếp hãy chọn hình thức nạp (QR Ngân hàng hoặc Thẻ cào Game/Điện thoại tích hợp AI tự động hóa):",
                         color = TextGray,
                         fontSize = 12.sp
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Quick-choose amounts row
+                    // Dual Tab Selector
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(DeepObsidian, RoundedCornerShape(12.dp))
+                            .padding(4.dp)
                     ) {
-                        listOf(20000.0, 50000.0, 100000.0, 200000.0, 500000.0).forEach { amount ->
-                            val isSelected = selectedAmountByQuick == amount && customAmountText.isEmpty()
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(if (isSelected) TransparentGreen else DeepObsidian)
-                                    .border(
-                                        1.dp,
-                                        if (isSelected) BrightTurquoise else Color.White.copy(alpha = 0.05f),
-                                        RoundedCornerShape(10.dp)
-                                    )
-                                    .clickable {
-                                        selectedAmountByQuick = amount
-                                        customAmountText = ""
-                                    }
-                                    .padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "${df.format(amount / 1000)}K",
-                                    color = if (isSelected) BrightTurquoise else Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (activeRechargeTab == 0) BrightTurquoise else Color.Transparent)
+                                .clickable { activeRechargeTab = 0 }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "🏦 VIETQR BANK",
+                                color = if (activeRechargeTab == 0) DeepObsidian else Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.5.sp
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (activeRechargeTab == 1) CoralVibrant else Color.Transparent)
+                                .clickable { activeRechargeTab = 1 }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "💳 THẺ CÀO AI (AUTO)",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.5.sp
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Custom amount input field
-                    OutlinedTextField(
-                        value = customAmountText,
-                        onValueChange = { input ->
-                            if (input.all { it.isDigit() }) {
-                                customAmountText = input
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Hoặc nhập số tiền khác...", color = TextGray) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BrightTurquoise,
-                            unfocusedBorderColor = BorderGreen,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        leadingIcon = {
-                            Icon(Icons.Default.AccountBalanceWallet, "Wallet Icon", tint = BrightTurquoise)
-                        },
-                        suffix = {
-                            Text("VND", color = BrightTurquoise, fontWeight = FontWeight.Bold)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    val activeRechargeAmount = if (customAmountText.isNotEmpty()) {
-                        customAmountText.toDoubleOrNull() ?: 0.0
-                    } else {
-                        selectedAmountByQuick
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Button(
-                        onClick = {
-                            if (activeRechargeAmount > 0) {
-                                lastRechargedAmount = activeRechargeAmount
-                                showBankTransferPortal = true
-                                notificationMessage = "Đã tạo mã QR nạp tiền thành công! Vui lòng quét mã bên dưới."
-                            } else {
-                                notificationError = "Vui lòng chọn hoặc nhập số tiền nạp hợp lệ!"
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = BrightTurquoise,
-                            contentColor = DeepObsidian
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.QrCodeScanner, "QR Code Scan")
-                        Spacer(modifier = Modifier.width(8.dp))
+                    if (activeRechargeTab == 0) {
+                        // --- TAB 0: VIETQR DEPOSIT ---
                         Text(
-                            text = "TẠO QR NẠP ${df.format(activeRechargeAmount)}đ",
-                            fontWeight = FontWeight.Black,
+                            text = "Chọn số tiền muốn nạp:",
+                            color = Color.White,
                             fontSize = 12.sp,
-                            letterSpacing = 1.sp
+                            fontWeight = FontWeight.Bold
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Quick-choose amounts row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(20000.0, 50000.0, 100000.0, 200000.0, 500000.0).forEach { amount ->
+                                val isSelected = selectedAmountByQuick == amount && customAmountText.isEmpty()
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) TransparentGreen else DeepObsidian)
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) BrightTurquoise else Color.White.copy(alpha = 0.05f),
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable {
+                                            selectedAmountByQuick = amount
+                                            customAmountText = ""
+                                        }
+                                        .padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "${df.format(amount / 1000)}K",
+                                        color = if (isSelected) BrightTurquoise else Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Custom amount input field
+                        OutlinedTextField(
+                            value = customAmountText,
+                            onValueChange = { input ->
+                                if (input.all { it.isDigit() }) {
+                                    customAmountText = input
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Hoặc nhập số tiền khác...", color = TextGray) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = BrightTurquoise,
+                                unfocusedBorderColor = BorderGreen,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            leadingIcon = {
+                                Icon(Icons.Default.AccountBalanceWallet, "Wallet Icon", tint = BrightTurquoise)
+                            },
+                            suffix = {
+                                Text("VND", color = BrightTurquoise, fontWeight = FontWeight.Bold)
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        val activeRechargeAmount = if (customAmountText.isNotEmpty()) {
+                            customAmountText.toDoubleOrNull() ?: 0.0
+                        } else {
+                            selectedAmountByQuick
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Button(
+                            onClick = {
+                                if (activeRechargeAmount > 0) {
+                                    lastRechargedAmount = activeRechargeAmount
+                                    showBankTransferPortal = true
+                                    notificationMessage = "Đã tạo mã QR nạp tiền thành công! Vui lòng quét mã bên dưới."
+                                } else {
+                                    notificationError = "Vui lòng chọn hoặc nhập số tiền nạp hợp lệ!"
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BrightTurquoise,
+                                contentColor = DeepObsidian
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.QrCodeScanner, "QR Code Scan")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "TẠO QR NẠP ${df.format(activeRechargeAmount)}đ",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 12.sp,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    } else {
+                        // --- TAB 1: AI AUTOMATED SCRATCH CARD DEPOSIT ---
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "CHỌN NHÀ MẠNG:",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("Viettel", "Mobifone", "Vinaphone", "Zing").forEach { carrier ->
+                                    val isSel = cardCarrier == carrier
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSel) CoralVibrant.copy(alpha = 0.2f) else DeepObsidian)
+                                            .border(1.5.dp, if (isSel) CoralVibrant else Color.Transparent, RoundedCornerShape(8.dp))
+                                            .clickable { cardCarrier = carrier }
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = carrier.uppercase(),
+                                            color = if (isSel) CoralVibrant else Color.White,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Text(
+                                text = "CHỌN MỆNH GIÁ:",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("20000", "50000", "100000", "200000", "500000").forEach { valStr ->
+                                    val isSel = cardValueText == valStr
+                                    val displayVal = "${df.format(valStr.toDouble() / 1000)}K"
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSel) CoralVibrant.copy(alpha = 0.2f) else DeepObsidian)
+                                            .border(1.5.dp, if (isSel) CoralVibrant else Color.Transparent, RoundedCornerShape(8.dp))
+                                            .clickable { cardValueText = valStr }
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = displayVal,
+                                            color = if (isSel) CoralVibrant else Color.White,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            OutlinedTextField(
+                                value = cardSerialText,
+                                onValueChange = { cardSerialText = it },
+                                label = { Text("Số Serial thẻ cào", color = TextGray, fontSize = 12.sp) },
+                                placeholder = { Text("Ví dụ: 1000384729184", color = TextGray.copy(alpha = 0.5f), fontSize = 12.sp) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = CoralVibrant,
+                                    unfocusedBorderColor = BorderGreen,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            OutlinedTextField(
+                                value = cardCodeText,
+                                onValueChange = { cardCodeText = it },
+                                label = { Text("Mã thẻ (Mã PIN dưới lớp bạc)", color = TextGray, fontSize = 12.sp) },
+                                placeholder = { Text("Ví dụ: 3829471948372", color = TextGray.copy(alpha = 0.5f), fontSize = 12.sp) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = CoralVibrant,
+                                    unfocusedBorderColor = BorderGreen,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // AI Auto-Scan Button
+                                Button(
+                                    onClick = {
+                                        isScanningCard = true
+                                    },
+                                    modifier = Modifier.weight(1.2f).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF1E1B4B),
+                                        contentColor = BrightTurquoise
+                                    ),
+                                    border = BorderStroke(1.5.dp, BrightTurquoise),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.Default.SmartToy, "AI Auto", modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("🤖 AI QUÉT THẺ", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                }
+
+                                // Submit manual card Button
+                                Button(
+                                    onClick = {
+                                        if (cardSerialText.isBlank() || cardCodeText.isBlank()) {
+                                            notificationError = "Vui lòng nhập đầy đủ Số Serial và Mã thẻ cào!"
+                                            return@Button
+                                        }
+                                        val amt = cardValueText.toDoubleOrNull() ?: 50000.0
+                                        viewModel.simulateBankDeposit(amt, "Nạp thẻ cào $cardCarrier Serial $cardSerialText", userAccount?.username ?: "Sếp")
+                                        notificationMessage = "Nạp thẻ cào $cardCarrier mệnh giá ${df.format(amt)}đ đang được AI đối soát thành công!"
+                                        cardSerialText = ""
+                                        cardCodeText = ""
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = CoralVibrant,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("NẠP THẺ NGAY", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2682,7 +2935,33 @@ fun RechargeScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Primary simulation button: Correct content (auto-approved by AI Bot)
+                        // SẾP'S MAIN REQUEST: AI SCREENSHOT SCANNER BUTTON (Chữ to rõ ràng, bự chuyên nghiệp!)
+                        Button(
+                            onClick = {
+                                showScreenshotUploadDialog = true
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BrightTurquoise,
+                                contentColor = DeepObsidian
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Default.PhotoCamera, "Upload Bill screenshot", modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "📸 CHỤP / TẢI LÊN ẢNH BILL (AI TỰ ĐỘNG)",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 14.sp,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Secondary simulation button
                         Button(
                             onClick = {
                                 viewModel.simulateBankDeposit(lastRechargedAmount, "TV ${userAccount?.username ?: "quanghuypham"}", "MÔ PHỎNG SẾP")
@@ -2690,39 +2969,16 @@ fun RechargeScreen(
                                 customAmountText = ""
                                 notificationMessage = "Đang gửi tín hiệu giao dịch đến AI Admin Bot để phân tích!"
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().height(42.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = GlowGreen,
-                                contentColor = DeepObsidian
+                                containerColor = Color.DarkGray,
+                                contentColor = Color.White
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Icon(Icons.Default.SmartToy, "AI Bot Scan")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "ĐÃ CHUYỂN KHOẢN (AI TỰ ĐỘNG PHÂN TÍCH)", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Secondary simulation button: Incorrect/Foreign content (AI flags and ignores auto-credit)
-                        Button(
-                            onClick = {
-                                viewModel.simulateBankDeposit(lastRechargedAmount, "Nạp tiền game booster", "KHÁCH VÃNG LAI")
-                                showBankTransferPortal = false
-                                customAmountText = ""
-                                notificationMessage = "Đang gửi giao dịch lỗi cho AI Admin Bot thẩm định!"
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2D151B),
-                                contentColor = CoralVibrant
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, CoralVibrant)
-                        ) {
-                            Icon(Icons.Default.Warning, "AI Flag Error")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "MÔ PHỎNG GIAO DỊCH SAI NỘI DUNG (AI SẼ BỎ QUA)", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Icon(Icons.Default.SmartToy, "AI Bot Scan", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "MÔ PHỎNG CHUYỂN KHOẢN NHANH", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                     }
                 }
@@ -3041,51 +3297,7 @@ fun RechargeScreen(
             }
         }
 
-        // 7. ADMIN BYPASS PANEL (ONLY FOR TESTING)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, CoralVibrant.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
-                colors = CardDefaults.cardColors(containerColor = DarkTealCard)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "CHẾ ĐỘ QUẢN TRỊ VIÊN (ADMIN BYPASS)",
-                            color = CoralVibrant,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                        Icon(Icons.Default.Security, "Security", tint = CoralVibrant, modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Nhấn nút dưới để chuyển đổi thiết bị của bạn sang chế độ ADMIN hoàn toàn miễn phí, mở khóa vĩnh viễn không giới hạn tính năng.",
-                        color = TextGray,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            viewModel.enableAdminMode()
-                            notificationMessage = "Đặc quyền ADMIN kích hoạt! Toàn bộ tính năng cao cấp đã mở khóa miễn phí vĩnh viễn!"
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant, contentColor = Color.White),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(text = "KÍCH HOẠT CHẾ ĐỘ ADMIN (FREE)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    }
-                }
-            }
-        }
+
 
         // 8. AI ASSISTANT CHAT TERMINAL (TRỢ LÝ BOT AI HỖ TRỢ ĐĂNG KÝ)
         item {
@@ -3208,5 +3420,402 @@ fun RechargeScreen(
                 }
             }
         }
+    }
+
+    if (showScreenshotUploadDialog) {
+        AlertDialog(
+            onDismissRequest = { showScreenshotUploadDialog = false },
+            containerColor = DeepObsidian,
+            title = {
+                Text(
+                    text = "📸 CHỌN ẢNH CHỤP BILL ĐỂ AI QUÉT",
+                    color = BrightTurquoise,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Vui lòng chọn một hình ảnh bill đã chụp sẵn trong thiết bị của sếp dưới đây. AI của chúng tôi sẽ bắt đầu quét và tự động cộng tiền ngay lập tức:",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                    
+                    val mockBills = listOf(
+                        Triple("MB Bank", 50000.0, "Bill MB - 50,000đ"),
+                        Triple("Techcombank", 100000.0, "Bill Techcombank - 100,000đ"),
+                        Triple("VietinBank", 200000.0, "Bill VietinBank - 200,000đ"),
+                        Triple("Vietcombank", 500000.0, "Bill Vietcombank - 500,000đ")
+                    )
+                    
+                    mockBills.forEach { (bank, amount, label) ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    scannedBankName = bank
+                                    scannedAmount = amount
+                                    showScreenshotUploadDialog = false
+                                    isScanningScreenshot = true
+                                },
+                            colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                            border = BorderStroke(1.dp, BorderGreen)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(Icons.Default.ReceiptLong, "Receipt", tint = BrightTurquoise)
+                                    Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Text("CHỌN", color = GlowGreen, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showScreenshotUploadDialog = false }) {
+                    Text("ĐÓNG", color = TextGray)
+                }
+            }
+        )
+    }
+
+    if (isScanningScreenshot) {
+        AlertDialog(
+            onDismissRequest = { },
+            containerColor = DeepObsidian,
+            title = {
+                Text(
+                    text = "🤖 AI ĐANG QUÉT TRÍCH XUẤT BILL...",
+                    color = BrightTurquoise,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(160.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF071F1F))
+                            .border(2.dp, BorderGreen, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val w = size.width
+                            val h = size.height
+                            val laserY = h * scanProgress
+                            
+                            drawLine(
+                                color = Color.Green,
+                                start = Offset(0f, laserY),
+                                end = Offset(w, laserY),
+                                strokeWidth = 8f
+                            )
+                        }
+                        
+                        Icon(
+                            imageVector = Icons.Default.DocumentScanner,
+                            contentDescription = "Scanning",
+                            tint = BrightTurquoise.copy(alpha = 0.6f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+                    
+                    Text(
+                        text = "Tiến độ: ${(scanProgress * 100).toInt()}%",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    LinearProgressIndicator(
+                        progress = scanProgress,
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                        color = BrightTurquoise,
+                        trackColor = Color.DarkGray
+                    )
+                    
+                    val scanningStatusText = when {
+                        scanProgress < 0.3f -> "🔍 Đang tải và đọc cấu trúc ảnh bill..."
+                        scanProgress < 0.6f -> "🧠 AI OCR đang trích xuất số tiền và nội dung..."
+                        scanProgress < 0.9f -> "🔗 Đang đối khớp giao dịch với tên tài khoản sếp..."
+                        else -> "⚡ Xác thực dữ liệu số dư, chuẩn bị cộng tiền..."
+                    }
+                    
+                    Text(
+                        text = scanningStatusText,
+                        color = TextGray,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    if (showScanSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showScanSuccessDialog = false },
+            containerColor = DeepObsidian,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Success",
+                    tint = GlowGreen,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "AI QUÉT THÀNH CÔNG! 🎉",
+                    color = GlowGreen,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "AI đã tự động trích xuất chính xác thông tin giao dịch thành công:",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF0A221C))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Ngân hàng:", color = TextGray, fontSize = 11.sp)
+                            Text(scannedBankName, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Số tiền:", color = TextGray, fontSize = 11.sp)
+                            Text("${df.format(scannedAmount)} VND", color = GlowGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Nội dung:", color = TextGray, fontSize = 11.sp)
+                            Text("TV ${userAccount?.username ?: "quanghuypham"}", color = BrightTurquoise, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    
+                    Text(
+                        text = "Hệ thống đã tự động cộng thêm +${df.format(scannedAmount)}đ vào số dư tài khoản của sếp!",
+                        color = GlowGreen,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.simulateBankDeposit(scannedAmount, "TV ${userAccount?.username ?: "quanghuypham"}", "Ảnh chụp màn hình sếp")
+                        showScanSuccessDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GlowGreen, contentColor = DeepObsidian),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("OK, TUYỆT VỜI", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    if (isScanningCard) {
+        AlertDialog(
+            onDismissRequest = { },
+            containerColor = DeepObsidian,
+            title = {
+                Text(
+                    text = "🤖 AI ĐANG QUÉT THẺ CÀO...",
+                    color = CoralVibrant,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(160.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF220A10))
+                            .border(2.dp, CoralVibrant, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val w = size.width
+                            val h = size.height
+                            val laserY = h * cardScanProgress
+                            
+                            drawLine(
+                                color = CoralVibrant,
+                                start = Offset(0f, laserY),
+                                end = Offset(w, laserY),
+                                strokeWidth = 8f
+                            )
+                        }
+                        
+                        Icon(
+                            imageVector = Icons.Default.SmartToy,
+                            contentDescription = "Scanning Card",
+                            tint = CoralVibrant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+                    
+                    Text(
+                        text = "Phân tích cấu trúc thẻ: ${(cardScanProgress * 100).toInt()}%",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    LinearProgressIndicator(
+                        progress = cardScanProgress,
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                        color = CoralVibrant,
+                        trackColor = Color.DarkGray
+                    )
+                    
+                    val cardStatusMsg = when {
+                        cardScanProgress < 0.3f -> "🔍 Đang nhận diện khu vực mã số PIN..."
+                        cardScanProgress < 0.6f -> "🧠 AI OCR đang bóc tách số Serial & Mã thẻ..."
+                        cardScanProgress < 0.9f -> "🔗 Khớp nối dữ liệu với nhà mạng $cardCarrier..."
+                        else -> "⚡ Kiểm soát an ninh mã thẻ nạp..."
+                    }
+                    
+                    Text(
+                        text = cardStatusMsg,
+                        color = TextGray,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    if (showCardScanSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showCardScanSuccessDialog = false },
+            containerColor = DeepObsidian,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Success",
+                    tint = GlowGreen,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "AI QUÉT THẺ THÀNH CÔNG! 🎉",
+                    color = GlowGreen,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "AI đã tự động quét và bóc tách thông tin thẻ nạp thành công:",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF0A221C))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Nhà mạng:", color = TextGray, fontSize = 11.sp)
+                            Text(cardCarrier.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Mệnh giá:", color = TextGray, fontSize = 11.sp)
+                            Text("${df.format(cardValueText.toDoubleOrNull() ?: 50000.0)} VND", color = GlowGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Số Serial:", color = TextGray, fontSize = 11.sp)
+                            Text(cardSerialText, color = BrightTurquoise, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Mã thẻ PIN:", color = TextGray, fontSize = 11.sp)
+                            Text(cardCodeText, color = BrightTurquoise, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    
+                    Text(
+                        text = "Hệ thống đã tự động cộng thêm +${df.format(cardValueText.toDoubleOrNull() ?: 50000.0)}đ vào số dư tài khoản của sếp!",
+                        color = GlowGreen,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val amt = cardValueText.toDoubleOrNull() ?: 50000.0
+                        viewModel.simulateBankDeposit(amt, "Nạp thẻ cào $cardCarrier qua AI", userAccount?.username ?: "Sếp")
+                        showCardScanSuccessDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GlowGreen, contentColor = DeepObsidian),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("OK, TUYỆT VỜI", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }

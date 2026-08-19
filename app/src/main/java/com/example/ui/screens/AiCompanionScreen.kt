@@ -35,6 +35,9 @@ fun AiCompanionScreen(
 ) {
     val chatHistory by viewModel.chatHistory.collectAsState()
     val isAiLoading by viewModel.isAiLoading.collectAsState()
+    val userAccount by viewModel.userAccount.collectAsState()
+    val isMultiBotEnabled by viewModel.isMultiBotEnabled.collectAsState()
+    val isAdmin = userAccount?.tier == "ADMIN" || userAccount?.customRole?.lowercase()?.contains("admin") == true
     
     val allImportedFeatures by viewModel.allImportedFeatures.collectAsState()
     val isImportingCode by viewModel.isImportingCode.collectAsState()
@@ -49,6 +52,7 @@ fun AiCompanionScreen(
     // Fields for importing custom code
     var importFileName by remember { mutableStateOf("customer_care_ai.py") }
     var importRawCode by remember { mutableStateOf("") }
+    var showLocalFileDialog by remember { mutableStateOf(false) }
 
     // Scroll to bottom when new chat message comes
     LaunchedEffect(chatHistory.size) {
@@ -441,232 +445,365 @@ fun AiCompanionScreen(
 
         } else {
             // WORKSPACE: AI GHÉP CODE & KỊCH BẢN CHATBOT (IMPORT RAW FILES / GITHUB REPO SCRIPTS)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Interactive Dashboard Header
-                Box(
+            if (!isAdmin) {
+                Column(
                     modifier = Modifier
+                        .weight(1f)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(CoralVibrant.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, CoralVibrant.copy(alpha = 0.4f)), RoundedCornerShape(8.dp))
-                        .padding(12.dp)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CloudDownload, "GitHub Importer", tint = CoralVibrant, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(36.dp))
+                            .background(Color(0xFF220A10))
+                            .border(2.dp, CoralVibrant, RoundedCornerShape(36.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Security Guard Lock",
+                            tint = CoralVibrant,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "🔒 KHU VỰC QUẢN TRỊ BẢO MẬT CAO",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Để ngăn chặn các hành vi cố tình chèn mã độc (Prompt Injection), khai thác lỗ hổng bảo mật hoặc lợi dụng AI truy xuất trái phép dữ liệu tài khoản người dùng, nhân viên và quản trị viên, chức năng Ghép Mã Custom & Cấu Hình Đa Nhiệm AI chỉ được mở khóa cho Admin Hệ Thống.",
+                        color = TextGray,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 17.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.4f))
+                            .border(1.dp, BorderGreen.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "🛡️ LÁ THẾP AI SHIELD ĐANG HOẠT ĐỘNG:\nThông tin bảo mật của Sếp và khách hàng được mã hóa tuyệt mật 100%.",
+                            color = GlowGreen,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // --- MULTI-AGENT BOT CONTROLLER (ADMIN ONLY FEATURE) ---
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                        border = BorderStroke(1.5.dp, CoralVibrant)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.SmartToy, "MultiBot", tint = CoralVibrant, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "⚙️ CẤU HÌNH ĐA NHIỆM AI & BOT",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                                
+                                Switch(
+                                    checked = isMultiBotEnabled,
+                                    onCheckedChange = { viewModel.setMultiBotEnabled(it) },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = CoralVibrant,
+                                        uncheckedThumbColor = Color.LightGray,
+                                        uncheckedTrackColor = DeepObsidian
+                                    )
+                                )
+                            }
+                            
                             Text(
-                                text = "BỘ CHUYỂN ĐỔI CHATBOT AI & MÃ NGUỒN CUSTOM",
+                                text = "Cho phép kích hoạt nhiều AI Chatbot chạy đồng hành song song. Khi bật, mọi câu hỏi từ Sếp sẽ được toàn bộ chatbot đang hoạt động trả lời đồng thời cùng một lúc!",
+                                color = TextGray,
+                                fontSize = 10.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+
+                    // Interactive Dashboard Header
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(CoralVibrant.copy(alpha = 0.12f))
+                            .border(BorderStroke(1.dp, CoralVibrant.copy(alpha = 0.4f)), RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.CloudDownload, "GitHub Importer", tint = CoralVibrant, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "BỘ CHUYỂN ĐỔI CHATBOT AI & MÃ NGUỒN CUSTOM",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Text(
+                                text = "Sếp dán bất kỳ file code nào tìm được trên GitHub (Python, JS, C++, Kotlin, JSON, Script), AI sẽ tự động phân tích và chuyển đổi thành kịch bản chatbot thông minh chạy ngay tức khắc!",
+                                color = TextGray,
+                                fontSize = 10.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+
+                    // --- PREMIUM DROP ZONE & FILE DROPPING MOCK AREA ---
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, CoralVibrant.copy(alpha = 0.6f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DriveFolderUpload,
+                                contentDescription = "Drop zone",
+                                tint = CoralVibrant,
+                                modifier = Modifier.size(44.dp)
+                            )
+                            
+                            Text(
+                                text = "Kéo & Thả Tệp Tin GitHub Hoặc Dán Code Tại Đây",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
-                        }
-                        Text(
-                            text = "Sếp dán bất kỳ file code nào tìm được trên GitHub (Python, JS, C++, Kotlin, JSON, Script), AI sẽ tự động phân tích và chuyển đổi thành kịch bản chatbot thông minh chạy ngay tức khắc!",
-                            color = TextGray,
-                            fontSize = 10.sp,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
-
-                // --- PREMIUM DROP ZONE & FILE DROPPING MOCK AREA ---
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.5.dp, CoralVibrant.copy(alpha = 0.6f))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DriveFolderUpload,
-                            contentDescription = "Drop zone",
-                            tint = CoralVibrant,
-                            modifier = Modifier.size(44.dp)
-                        )
-                        
-                        Text(
-                            text = "Kéo & Thả Tệp Tin GitHub Hoặc Dán Code Tại Đây",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                        
-                        Text(
-                            text = "Sếp có thể nhấn dán trực tiếp từ bộ nhớ tạm, hoặc nhấp chọn nhanh một trong các mẫu kịch bản đắt giá bên dưới để AI tự dọn dẹp và ghép mã:",
-                            color = TextGray,
-                            fontSize = 10.sp,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 15.sp
-                        )
-
-                        // QUICK TEMPLATE SELECTOR PILLS
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val presetTemplates = listOf(
-                                Triple(
-                                    "cskh_auto.json", 
-                                    "Mẫu: CSKH Tự Động (JSON)",
-                                    "{\n  \"bot_profile\": \"AI Chăm Sóc Khách Hàng chuyên nghiệp\",\n  \"instructions\": \"Tự động hướng dẫn nâng cấp VIP1/VIP2, nạp tiền nhanh và xử lý khiếu nại game 24/7. Luôn xưng hô thân mật.\"\n}"
-                                ),
-                                Triple(
-                                    "freefire_booster.py", 
-                                    "Mẫu: Ghìm Tâm Free Fire (Python)",
-                                    "import fff_optimizer\ndef auto_drag_headshot(dpi=600, speed=1.5):\n    # Hướng dẫn game thủ vuốt tâm chữ J, tinh chỉnh độ nhạy cho mọi điện thoại Samsung, iPhone, Xiaomi cực mượt để ghim đầu đối thủ\n    return fff_optimizer.apply_aim(dpi, speed)"
-                                ),
-                                Triple(
-                                    "boost_fps.sh", 
-                                    "Mẫu: Fix Lag & Optimize (Shell)",
-                                    "#!/bin/bash\necho 'Đang dọn dẹp bộ nhớ đệm RAM...'\nsudo sysctl -w vm.drop_caches=3\necho 'Kích hoạt DNS Google 8.8.8.8 để hạ ping giật lag cực mượt'"
-                                )
+                            
+                            Text(
+                                text = "Sếp có thể nhấn dán trực tiếp từ bộ nhớ tạm, hoặc nhấp chọn nhanh một trong các mẫu kịch bản đắt giá bên dưới để AI tự dọn dẹp và ghép mã:",
+                                color = TextGray,
+                                fontSize = 10.sp,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 15.sp
                             )
 
-                            presetTemplates.forEach { (fname, btnLabel, content) ->
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(CoralVibrant.copy(alpha = 0.2f))
-                                        .border(BorderStroke(0.5.dp, CoralVibrant), RoundedCornerShape(16.dp))
-                                        .clickable {
-                                            importFileName = fname
-                                            importRawCode = content
-                                            viewModel.showToast("Đã nạp thành công mã nguồn mẫu: $fname")
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                                ) {
-                                    Text(
-                                        text = btnLabel,
-                                        color = Color.White,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
+                            // QUICK TEMPLATE SELECTOR PILLS
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val presetTemplates = listOf(
+                                    Triple(
+                                        "cskh_auto.json", 
+                                        "Mẫu: CSKH Tự Động (JSON)",
+                                        "{\n  \"bot_profile\": \"AI Chăm Sóc Khách Hàng chuyên nghiệp\",\n  \"instructions\": \"Tự động hướng dẫn nâng cấp VIP1/VIP2, nạp tiền nhanh và xử lý khiếu nại game 24/7. Luôn xưng hô thân mật.\"\n}"
+                                    ),
+                                    Triple(
+                                        "freefire_booster.py", 
+                                        "Mẫu: Ghìm Tâm Free Fire (Python)",
+                                        "import fff_optimizer\ndef auto_drag_headshot(dpi=600, speed=1.5):\n    # Hướng dẫn game thủ vuốt tâm chữ J, tinh chỉnh độ nhạy cho mọi điện thoại Samsung, iPhone, Xiaomi cực mượt để ghim đầu đối thủ\n    return fff_optimizer.apply_aim(dpi, speed)"
+                                    ),
+                                    Triple(
+                                        "boost_fps.sh", 
+                                        "Mẫu: Fix Lag & Optimize (Shell)",
+                                        "#!/bin/bash\necho 'Đang dọn dẹp bộ nhớ đệm RAM...'\nsudo sysctl -w vm.drop_caches=3\necho 'Kích hoạt DNS Google 8.8.8.8 để hạ ping giật lag cực mượt'"
                                     )
+                                )
+
+                                presetTemplates.forEach { (fname, btnLabel, content) ->
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(CoralVibrant.copy(alpha = 0.2f))
+                                            .border(BorderStroke(0.5.dp, CoralVibrant), RoundedCornerShape(16.dp))
+                                            .clickable {
+                                                importFileName = fname
+                                                importRawCode = content
+                                                viewModel.showToast("Đã nạp thành công mã nguồn mẫu: $fname")
+                                            }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = btnLabel,
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Instant clipboard trigger
+                                Button(
+                                    onClick = {
+                                        importFileName = "clipboard_github_source.txt"
+                                        importRawCode = "BOT_NAME: AI Chăm Sóc Độc Quyền\nBOT_DESC: Bot chăm sóc khách hàng tự động cực đỉnh\nBOT_SYSTEM_PROMPT: Bạn là chuyên gia chăm sóc khách hàng VIP của Tool Vip. Luôn xưng hô sếp, chào đón nhiệt thành và hướng dẫn nạp tiền cực nhanh!"
+                                        viewModel.showToast("Đã dán dữ liệu thành công từ Khay nhớ tạm!")
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.5f)),
+                                    border = BorderStroke(0.5.dp, BorderGreen),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(Icons.Default.ContentPaste, null, tint = BrightTurquoise, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("DÁN TỪ BỘ NHỚ TẠM", color = BrightTurquoise, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                // Simulated Device Local File Chooser ("Chỗ đem file của sếp")
+                                Button(
+                                    onClick = {
+                                        showLocalFileDialog = true
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A)),
+                                    border = BorderStroke(1.dp, CoralVibrant),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(Icons.Default.Folder, null, tint = CoralVibrant, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("📂 CHỌN ĐEM FILE", color = CoralVibrant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
-
-                        // Instant clipboard trigger
-                        Button(
-                            onClick = {
-                                importFileName = "clipboard_github_source.txt"
-                                importRawCode = "BOT_NAME: AI Chăm Sóc Độc Quyền\nBOT_DESC: Bot chăm sóc khách hàng tự động cực đỉnh\nBOT_SYSTEM_PROMPT: Bạn là chuyên gia chăm sóc khách hàng VIP của Tool Vip. Luôn xưng hô sếp, chào đón nhiệt thành và hướng dẫn nạp tiền cực nhanh!"
-                                viewModel.showToast("Đã dán dữ liệu thành công từ Khay nhớ tạm!")
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.5f)),
-                            border = BorderStroke(0.5.dp, BorderGreen),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Default.ContentPaste, null, tint = BrightTurquoise, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("DÁN NHANH TỪ KHAY NHỚ TẠM", color = BrightTurquoise, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        }
                     }
-                }
 
-                // File Upload Inputs
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = DarkTealCard),
-                    border = BorderStroke(0.5.dp, BorderGreen)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = "Thông tin mã nguồn đã dán:",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
+                    // File Upload Inputs
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                        border = BorderStroke(0.5.dp, BorderGreen)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = "Thông tin mã nguồn đã dán:",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
 
-                        OutlinedTextField(
-                            value = importFileName,
-                            onValueChange = { importFileName = it },
-                            label = { Text("Tên tệp tin (VD: customer_support.py)", fontSize = 10.sp) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BrightTurquoise,
-                                unfocusedBorderColor = BorderGreen,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedLabelColor = BrightTurquoise,
-                                unfocusedLabelColor = TextGray
-                            ),
-                            shape = RoundedCornerShape(6.dp),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            OutlinedTextField(
+                                value = importFileName,
+                                onValueChange = { importFileName = it },
+                                label = { Text("Tên tệp tin (VD: customer_support.py)", fontSize = 10.sp) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = BrightTurquoise,
+                                    unfocusedBorderColor = BorderGreen,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedLabelColor = BrightTurquoise,
+                                    unfocusedLabelColor = TextGray
+                                ),
+                                shape = RoundedCornerShape(6.dp),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                        OutlinedTextField(
-                            value = importRawCode,
-                            onValueChange = { importRawCode = it },
-                            label = { Text("Nội dung kịch bản hoặc mã nguồn dán tại vùng thả", fontSize = 10.sp) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BrightTurquoise,
-                                unfocusedBorderColor = BorderGreen,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedLabelColor = BrightTurquoise,
-                                unfocusedLabelColor = TextGray
-                            ),
-                            shape = RoundedCornerShape(6.dp),
-                            minLines = 4,
-                            maxLines = 8,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            OutlinedTextField(
+                                value = importRawCode,
+                                onValueChange = { importRawCode = it },
+                                label = { Text("Nội dung kịch bản hoặc mã nguồn dán tại vùng thả", fontSize = 10.sp) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = BrightTurquoise,
+                                    unfocusedBorderColor = BorderGreen,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedLabelColor = BrightTurquoise,
+                                    unfocusedLabelColor = TextGray
+                                ),
+                                shape = RoundedCornerShape(6.dp),
+                                minLines = 4,
+                                maxLines = 8,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                        importResultMsg?.let { msg ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color.Black.copy(alpha = 0.4f))
-                                    .border(0.5.dp, BorderGreen.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                                    .padding(8.dp)
-                            ) {
-                                Text(
-                                    text = msg,
-                                    color = if (msg.contains("thành công")) GlowGreen else Color.White,
-                                    fontSize = 11.sp,
-                                    lineHeight = 16.sp
-                                )
+                            importResultMsg?.let { msg ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color.Black.copy(alpha = 0.4f))
+                                        .border(0.5.dp, BorderGreen.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        text = msg,
+                                        color = if (msg.contains("thành công")) GlowGreen else Color.White,
+                                        fontSize = 11.sp,
+                                        lineHeight = 16.sp
+                                    )
+                                }
                             }
-                        }
 
-                        Button(
-                            onClick = {
-                                viewModel.importCustomCodeAndCompile(importFileName, importRawCode)
-                                importRawCode = ""
-                            },
-                            enabled = !isImportingCode,
-                            colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(vertical = 12.dp)
-                        ) {
-                            if (isImportingCode) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("ĐANG BIÊN DỊCH & GHÉP BOT AI...", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            } else {
-                                Icon(Icons.Default.Bolt, null, tint = Color.White)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("BIÊN DỊCH & KÍCH HOẠT CHATBOT AI", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Button(
+                                onClick = {
+                                    viewModel.importCustomCodeAndCompile(importFileName, importRawCode)
+                                    importRawCode = ""
+                                },
+                                enabled = !isImportingCode,
+                                colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(vertical = 12.dp)
+                            ) {
+                                if (isImportingCode) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("ĐANG BIÊN DỊCH & GHÉP BOT AI...", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                } else {
+                                    Icon(Icons.Default.Bolt, null, tint = Color.White)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("BIÊN DỊCH & KÍCH HOẠT CHATBOT AI", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -769,6 +906,94 @@ fun AiCompanionScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showLocalFileDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showLocalFileDialog = false }
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(containerColor = DeepObsidian),
+                border = BorderStroke(1.dp, CoralVibrant),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "📂 BỘ KHAI THÁC TỆP TIN THIẾT BỊ",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        IconButton(onClick = { showLocalFileDialog = false }) {
+                            Icon(Icons.Default.Close, null, tint = Color.White)
+                        }
+                    }
+
+                    Text(
+                        text = "Chọn một tệp từ thư mục /storage/emulated/0/Download/ của Sếp để nạp trực tiếp vào trình biên dịch AI:",
+                        color = TextGray,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+
+                    val localFiles = listOf(
+                        Pair("antiband_v5.py", "BOT_NAME: AI Chống Quét AntiBan v5\nBOT_DESC: Công cụ bảo vệ nick chống báo cáo game Liên Quân và Free Fire cực đỉnh\nBOT_SYSTEM_PROMPT: Bạn là chuyên viên hỗ trợ chống ban độc quyền của Tool Vip. Tư vấn các nguyên tắc bypass an toàn nhất cho sếp."),
+                        Pair("aim_assist_config.json", "BOT_NAME: AI Hỗ Trợ Ghì Tâm\nBOT_DESC: Kịch bản kéo tâm siêu mượt 100% trúng đầu mọi súng\nBOT_SYSTEM_PROMPT: Bạn là Trợ Lý Ghì Tâm Độc Quyền. Hãy hướng dẫn cách kéo tâm, thiết lập DPI mượt nhất cho từng máy cực kỳ am hiểu."),
+                        Pair("ram_freeze_module.sh", "BOT_NAME: Module Đóng Băng RAM\nBOT_DESC: Kịch bản tự động tối ưu hóa RAM siêu tốc, dọn dẹp các tiến trình chạy ngầm làm chậm máy\nBOT_SYSTEM_PROMPT: Bạn là Module Đóng Băng RAM AI. Hãy hướng dẫn người dùng dọn rác, giải phóng cache cực kỳ thuyết phục."),
+                        Pair("vip_sales_script.txt", "BOT_NAME: AI Sale Vip Gói VIP\nBOT_DESC: Bot tự động tư vấn, chốt đơn nâng cấp VIP 1 và VIP 2 cực thuyết phục\nBOT_SYSTEM_PROMPT: Bạn là chatbot Sale Gói VIP chuyên nghiệp. Thuyết phục khách hàng nâng cấp VIP với giọng điệu năng nổ, cuốn hút.")
+                    )
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.height(200.dp)
+                    ) {
+                        items(localFiles) { (filename, code) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.Black.copy(alpha = 0.4f))
+                                    .border(0.5.dp, BorderGreen.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        importFileName = filename
+                                        importRawCode = code
+                                        showLocalFileDialog = false
+                                        viewModel.showToast("Đã đem tệp tin '$filename' thành công vào hàng chờ biên dịch!")
+                                    }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.InsertDriveFile, null, tint = BrightTurquoise, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(text = filename, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                    Text(text = "Dung lượng: ${(1..5).random()} KB", color = TextGray, fontSize = 9.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = { showLocalFileDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = CoralVibrant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("ĐÓNG", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

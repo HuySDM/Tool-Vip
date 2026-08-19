@@ -92,4 +92,14 @@ class AppRepository(private val appDao: AppDao) {
     suspend fun deleteImportedFeature(id: Int) {
         appDao.deleteImportedFeature(id)
     }
+
+    val allCacheCleanRecords: Flow<List<CacheCleanRecord>> = appDao.getAllCacheCleanRecordsFlow()
+
+    suspend fun insertCacheCleanRecord(record: CacheCleanRecord) {
+        appDao.insertCacheCleanRecord(record)
+    }
+
+    suspend fun clearCacheCleanRecords() {
+        appDao.clearCacheCleanRecords()
+    }
 }

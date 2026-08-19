@@ -80,3 +80,12 @@ data class ImportedFeature(
     val systemPrompt: String,
     val isActive: Boolean = false
 )
+
+@Entity(tableName = "cache_clean_records")
+data class CacheCleanRecord(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val timestamp: Long = System.currentTimeMillis(),
+    val clearedSizeMb: Double,
+    val reclaimedRamMb: Double,
+    val cleanType: String // "MANUAL", "AUTO"
+)

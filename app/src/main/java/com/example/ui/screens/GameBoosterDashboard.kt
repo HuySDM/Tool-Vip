@@ -525,6 +525,8 @@ fun GameBoosterDashboard(
                         val selectedGameProfilePackage by viewModel.selectedGameProfilePackage.collectAsState()
                         val selectedGraphicsProfile by viewModel.selectedGraphicsProfile.collectAsState()
                         val boosterLevel by viewModel.boosterLevel.collectAsState()
+                        val isShizukuQuickBoosting by viewModel.isShizukuQuickBoosting.collectAsState()
+                        val shizukuStatus by viewModel.shizukuStatus.collectAsState()
 
                         Column(
                             modifier = Modifier
@@ -533,6 +535,129 @@ fun GameBoosterDashboard(
                                 .padding(bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
+                            // 1.5. SHIZUKU QUICK BOOST CARD
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = activeColors.cardBg.copy(alpha = if (isDarkMode) cardTransparency else 1.0f)
+                                ),
+                                shape = RoundedCornerShape(corners),
+                                border = BorderStroke(
+                                    width = if (isShizukuQuickBoosting) 1.5.dp else 1.dp,
+                                    color = if (isShizukuQuickBoosting) activeColors.secondary else activeColors.border.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(activeColors.secondary.copy(alpha = 0.2f)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Bolt,
+                                                    contentDescription = "Quick Boost Icon",
+                                                    tint = activeColors.secondary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                            Column {
+                                                Text(
+                                                    text = "SHIZUKU QUICK BOOST",
+                                                    color = activeColors.secondary,
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    letterSpacing = 1.sp
+                                                )
+                                                Text(
+                                                    text = "Tối ưu bộ nhớ siêu tốc bằng Shizuku",
+                                                    color = activeColors.textSecondary,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                        }
+
+                                        // Connection status indicator badge
+                                        val isShizukuConnected = shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU"
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(
+                                                    if (isShizukuConnected) Color(0xFF10B981).copy(alpha = 0.15f)
+                                                    else Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                                )
+                                                .border(
+                                                    width = 0.5.dp,
+                                                    color = if (isShizukuConnected) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                )
+                                                .padding(horizontal = 6.dp, vertical = 3.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isShizukuConnected) "ĐÃ KẾT NỐI" else "MÔ PHỎNG",
+                                                color = if (isShizukuConnected) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    Text(
+                                        text = "Hệ thống sẽ rà quét ngay lập tức, phát hiện các ứng dụng/tiến trình chạy ngầm tiêu thụ dung lượng RAM lớn nhất để đóng băng sâu (am force-stop) giúp giải phóng tài nguyên tối đa cho phiên chơi game của bạn.",
+                                        color = activeColors.textPrimary,
+                                        fontSize = 12.sp,
+                                        lineHeight = 16.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Button(
+                                        onClick = {
+                                            viewModel.triggerShizukuQuickBoost { reclaimedMb, killedCount ->
+                                                viewModel.showToast("Quick Boost thành công! Đã dọn dẹp $killedCount tác vụ nặng, giải phóng ${String.format("%.1f", reclaimedMb)} MB RAM!")
+                                            }
+                                        },
+                                        enabled = !isShizukuQuickBoosting,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(44.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = activeColors.secondary,
+                                            contentColor = activeColors.background,
+                                            disabledContainerColor = activeColors.border.copy(alpha = 0.3f),
+                                            disabledContentColor = activeColors.textPrimary.copy(alpha = 0.4f)
+                                        )
+                                    ) {
+                                        if (isShizukuQuickBoosting) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(18.dp),
+                                                color = activeColors.background,
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("ĐANG QUÉT & ĐÓNG BĂNG TÁC VỤ NẶNG...", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        } else {
+                                            Icon(Icons.Default.Bolt, "Quick Boost", modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("KÍCH HOẠT QUICK BOOST", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                        }
+                                    }
+                                }
+                            }
+
                             // 1. AI-Driven Game Profile Card
                             Card(
                                 modifier = Modifier.fillMaxWidth(),

@@ -61,6 +61,70 @@ object TelexConverter {
         if (foundToneKey == null) {
             return cleanWord
         }
+
+        // Sếp rule: "như phần dấu thì ko bắt buộc khi s là dấu sắc nếu 1 lần nữa là ra s"
+        // Let's generalize it: if the tempWord already has the exact tone mark corresponding to the foundToneKey,
+        // we remove that tone mark (restore to base vowel) and append the literal toneKey character at the end!
+        val toneIndex = when (foundToneKey) {
+            's' -> 1 // dấu sắc
+            'f' -> 2 // dấu huyền
+            'r' -> 3 // dấu hỏi
+            'x' -> 4 // dấu ngã
+            'j' -> 5 // dấu nặng
+            else -> 0
+        }
+        
+        if (toneIndex > 0) {
+            val vowelWithTones = mapOf(
+                'a' to listOf('a', 'á', 'à', 'ả', 'ã', 'ạ'),
+                'ă' to listOf('ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ'),
+                'â' to listOf('â', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ'),
+                'e' to listOf('e', 'é', 'è', 'ẻ', 'ẽ', 'ẹ'),
+                'ê' to listOf('ê', 'ế', 'ề', 'ể', 'ễ', 'ệ'),
+                'i' to listOf('i', 'í', 'ì', 'ỉ', 'ĩ', 'ị'),
+                'o' to listOf('o', 'ó', 'ò', 'ỏ', 'õ', 'ọ'),
+                'ô' to listOf('ô', 'ố', 'ồ', 'ổ', 'ỗ', 'ộ'),
+                'ơ' to listOf('ơ', 'ớ', 'ờ', 'ở', 'ỡ', 'ợ'),
+                'u' to listOf('u', 'ú', 'ù', 'ủ', 'ũ', 'ụ'),
+                'ư' to listOf('ư', 'ứ', 'ừ', 'ử', 'ữ', 'ự'),
+                'y' to listOf('y', 'ý', 'ỳ', 'ỷ', 'ỹ', 'ỵ'),
+                'A' to listOf('A', 'Á', 'À', 'Ả', 'Ã', 'Ạ'),
+                'Ă' to listOf('Ă', 'Ắ', 'Ằ', 'Ẳ', 'Ẵ', 'Ặ'),
+                'Â' to listOf('Â', 'Ấ', 'Ầ', 'Ẩ', 'Ẫ', 'Ậ'),
+                'E' to listOf('E', 'É', 'È', 'Ẻ', 'Ẽ', 'Ẹ'),
+                'Ê' to listOf('Ê', 'Ế', 'Ề', 'Ể', 'Ễ', 'Ệ'),
+                'I' to listOf('I', 'Í', 'Ì', 'Ỉ', 'Ĩ', 'Ị'),
+                'O' to listOf('O', 'Ó', 'Ò', 'Ỏ', 'Õ', 'Ọ'),
+                'Ô' to listOf('Ô', 'Ố', 'Ồ', 'Ổ', 'Ỗ', 'Ộ'),
+                'Ơ' to listOf('Ơ', 'Ớ', 'Ờ', 'Ở', 'Ỡ', 'Ợ'),
+                'U' to listOf('U', 'Ú', 'Ù', 'Ủ', 'Ũ', 'Ụ'),
+                'Ư' to listOf('Ư', 'Ứ', 'Ừ', 'Ử', 'Ữ', 'Ự'),
+                'Y' to listOf('Y', 'Ý', 'Ỳ', 'Ỷ', 'Ỹ', 'Ỵ')
+            )
+            
+            var alreadyHasThisTone = false
+            var markedCharIndex = -1
+            var baseChar: Char = ' '
+            
+            for (i in tempWord.indices) {
+                val c = tempWord[i]
+                for ((base, list) in vowelWithTones) {
+                    if (list.getOrNull(toneIndex) == c) {
+                        alreadyHasThisTone = true
+                        markedCharIndex = i
+                        baseChar = base
+                        break
+                    }
+                }
+                if (alreadyHasThisTone) break
+            }
+            
+            if (alreadyHasThisTone && markedCharIndex != -1) {
+                val sb = java.lang.StringBuilder(tempWord)
+                sb.setCharAt(markedCharIndex, baseChar)
+                return sb.toString() + foundToneKey
+            }
+        }
         
         return applyToneMark(tempWord, foundToneKey)
     }

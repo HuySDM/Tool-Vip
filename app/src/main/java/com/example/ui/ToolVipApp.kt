@@ -158,8 +158,9 @@ fun ToolVipApp() {
 
                     Spacer(modifier = Modifier.height(6.dp))
 
+                    val maskedUsername = viewModel.maskSensitiveText(userAccount?.username ?: "quanghuy")
                     Text(
-                        text = "Tài khoản [${userAccount?.username}] yêu cầu mã xác thực bảo mật để truy cập ứng dụng.",
+                        text = "Tài khoản [$maskedUsername] yêu cầu mã xác thực bảo mật để truy cập ứng dụng.",
                         color = TextGray,
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center,
@@ -504,8 +505,10 @@ fun ToolVipApp() {
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
+                                    val isMasked by viewModel.isDataMaskingEnabled.collectAsState()
+                                    val balanceText = if (isMasked) "******đ" else "${df.format(userAccount?.balance ?: 0.0)}đ"
                                     Text(
-                                        text = "${df.format(userAccount?.balance ?: 0.0)}đ",
+                                        text = balanceText,
                                         color = GlowGreen,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold

@@ -408,43 +408,13 @@ fun LoginScreen(
                             }
                         }
                     } else {
-                        if (showPinInputStep) {
-                            if (pinValueState.trim() == expectedPinCode) {
-                                viewModel.login(username, password) { success, message ->
-                                    isLoading = false
-                                    if (success) {
-                                        infoMsg = message
-                                        onLoginSuccess()
-                                    } else {
-                                        errorMsg = message
-                                    }
-                                }
+                        // Reverted to old auth flow (Direct login as requested by sếp!)
+                        viewModel.login(username, password) { loginSuccess, loginMsg ->
+                            isLoading = false
+                            if (loginSuccess) {
+                                onLoginSuccess()
                             } else {
-                                isLoading = false
-                                errorMsg = "Mã xác thực 2 lớp (PIN) không chính xác! Vui lòng kiểm tra lại."
-                            }
-                        } else {
-                            viewModel.verifyLoginAndGetAuthPin(username, password) { success, message, pin ->
-                                if (success) {
-                                    if (!pin.isNullOrBlank()) {
-                                        expectedPinCode = pin
-                                        showPinInputStep = true
-                                        isLoading = false
-                                    } else {
-                                        // Direct login
-                                        viewModel.login(username, password) { loginSuccess, loginMsg ->
-                                            isLoading = false
-                                            if (loginSuccess) {
-                                                onLoginSuccess()
-                                            } else {
-                                                errorMsg = loginMsg
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    isLoading = false
-                                    errorMsg = message
-                                }
+                                errorMsg = loginMsg
                             }
                         }
                     }

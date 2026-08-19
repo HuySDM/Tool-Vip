@@ -85,4 +85,14 @@ interface AppDao {
 
     @Query("DELETE FROM imported_features WHERE id = :id")
     suspend fun deleteImportedFeature(id: Int)
+
+    // Cache Clean Records
+    @Query("SELECT * FROM cache_clean_records ORDER BY timestamp DESC")
+    fun getAllCacheCleanRecordsFlow(): Flow<List<CacheCleanRecord>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCacheCleanRecord(record: CacheCleanRecord)
+
+    @Query("DELETE FROM cache_clean_records")
+    suspend fun clearCacheCleanRecords()
 }
