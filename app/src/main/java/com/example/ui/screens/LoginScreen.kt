@@ -407,14 +407,40 @@ fun LoginScreen(
                                 errorMsg = message
                             }
                         }
-                    } else {
-                        // Reverted to old auth flow (Direct login as requested by sếp!)
-                        viewModel.login(username, password) { loginSuccess, loginMsg ->
+                    } else if (showPinInputStep) {
+                        if (pinValueState.trim() == expectedPinCode) {
+                            viewModel.login(username, password) { loginSuccess, loginMsg ->
+                                isLoading = false
+                                if (loginSuccess) {
+                                    onLoginSuccess()
+                                } else {
+                                    errorMsg = loginMsg
+                                }
+                            }
+                        } else {
                             isLoading = false
-                            if (loginSuccess) {
-                                onLoginSuccess()
+                            errorMsg = "Mã xác thực 2 lớp (PIN) không đúng! Vui lòng thử lại."
+                        }
+                    } else {
+                        viewModel.verifyLoginAndGetAuthPin(username, password) { success, msg, pin, isPrivileged ->
+                            if (success) {
+                                if (isPrivileged) {
+                                    isLoading = false
+                                    showPinInputStep = true
+                                    expectedPinCode = pin ?: "10293847"
+                                } else {
+                                    viewModel.login(username, password) { loginSuccess, loginMsg ->
+                                        isLoading = false
+                                        if (loginSuccess) {
+                                            onLoginSuccess()
+                                        } else {
+                                            errorMsg = loginMsg
+                                        }
+                                    }
+                                }
                             } else {
-                                errorMsg = loginMsg
+                                isLoading = false
+                                errorMsg = msg
                             }
                         }
                     }

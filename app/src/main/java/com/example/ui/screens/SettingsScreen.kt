@@ -7,7 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -642,6 +644,304 @@ fun SettingsScreen(
                             inactiveTrackColor = BorderGreen
                         )
                     )
+                }
+            }
+        }
+
+        // --- P2P PROXY RELAY & INCOME ACCUMULATOR ---
+        item {
+            Text(
+                text = "MÁY CHỦ TRUNG GIAN P2P & CÀY TIỀN VÍ",
+                color = BrightTurquoise,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+
+        item {
+            val isP2pProxyEnabled by viewModel.isP2pProxyEnabled.collectAsState()
+            val allowP2pOnMobileData by viewModel.allowP2pOnMobileData.collectAsState()
+            val p2pProxyRewardAccrued by viewModel.p2pProxyRewardAccrued.collectAsState()
+            val isP2pRelayActive by viewModel.isP2pRelayActive.collectAsState()
+            val p2pRelayDataTransferredMb by viewModel.p2pRelayDataTransferredMb.collectAsState()
+            val p2pActiveFirewallsCount by viewModel.p2pActiveFirewallsCount.collectAsState()
+            val actualNetworkType by viewModel.actualNetworkType.collectAsState()
+            val p2pServerPort by viewModel.p2pServerPort.collectAsState()
+            val p2pStatusLog by viewModel.p2pStatusLog.collectAsState()
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.2.dp, if (isP2pRelayActive) GlowGreen else BorderGreen)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Title and toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Dns,
+                                contentDescription = "P2P Proxy",
+                                tint = if (isP2pRelayActive) GlowGreen else BrightTurquoise,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Đăng Ký Làm Máy Chủ Trung Gian",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    text = "Sử dụng băng thông rảnh rỗi để hỗ trợ giảm ping cho cộng đồng và tích lũy tiền vào ví VIP.",
+                                    color = TextGray,
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isP2pProxyEnabled,
+                            onCheckedChange = { viewModel.setP2pProxyEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = DeepObsidian,
+                                checkedTrackColor = BrightTurquoise
+                            )
+                        )
+                    }
+
+                    if (isP2pProxyEnabled) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Divider(color = BorderGreen.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Real System Status Panel
+                        Text(
+                            text = "THÔNG TIN MÁY CHỦ TRUNG GIAN (VẬT LÝ THỰC TẾ):",
+                            color = BrightTurquoise,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Mạng Kết Nối Thực Tế:", color = TextGray, fontSize = 11.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Icon(
+                                        imageVector = if (actualNetworkType == "WIFI") Icons.Default.Wifi else Icons.Default.SignalCellularAlt,
+                                        contentDescription = null,
+                                        tint = if (actualNetworkType == "KHÔNG CÓ KẾT NỐI") Color.Red else GlowGreen,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Text(
+                                        text = actualNetworkType,
+                                        color = if (actualNetworkType == "KHÔNG CÓ KẾT NỐI") Color.Red else Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Địa Chỉ IP Thiết Bị:", color = TextGray, fontSize = 11.sp)
+                                Text(
+                                    text = viewModel.getLocalIpAddress(),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Cổng Lắng Nghe (Proxy Port):", color = TextGray, fontSize = 11.sp)
+                                Text(
+                                    text = if (p2pServerPort > 0) "$p2pServerPort (Đang chạy)" else "Chờ kích hoạt",
+                                    color = if (p2pServerPort > 0) GlowGreen else Color.Gray,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Divider(color = BorderGreen.copy(alpha = 0.2f))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Allow on Mobile data
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Cho phép chạy trên mạng di động 4G / 5G",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = "Nhận đến 20.000đ/tháng. Đã tích hợp nén dữ liệu Protobuf cực hạn giảm hao phí dữ liệu di động xuống thấp nhất (đến 85%!).",
+                                    color = TextGray,
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                            Switch(
+                                checked = allowP2pOnMobileData,
+                                onCheckedChange = { viewModel.setAllowP2pOnMobileData(it) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = DeepObsidian,
+                                    checkedTrackColor = BrightTurquoise
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Live Monitoring Panel
+                        Surface(
+                            color = DeepObsidian,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, if (isP2pRelayActive) GlowGreen.copy(alpha = 0.4f) else CoralVibrant.copy(alpha = 0.4f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Trạng Thái AI Canh Gác:", color = TextGray, fontSize = 11.sp)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isP2pRelayActive) GlowGreen else Color(0xFFF97316))
+                                        )
+                                        Text(
+                                            text = if (isP2pRelayActive) "ĐANG HOẠT ĐỘNG" else "TẠM DỪNG (CHỜ WI-FI)",
+                                            color = if (isP2pRelayActive) GlowGreen else Color(0xFFF97316),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Đã Chuyển Tiếp (Nén sâu):", color = TextGray, fontSize = 11.sp)
+                                    Text(
+                                        text = "${String.format("%.2f", p2pRelayDataTransferredMb)} MB",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Siêu Tường Lửa Hoạt Động:", color = TextGray, fontSize = 11.sp)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Icon(Icons.Default.Shield, null, tint = BrightTurquoise, modifier = Modifier.size(12.dp))
+                                        Text(
+                                            text = "$p2pActiveFirewallsCount lớp (AI giám sát 24/7)",
+                                            color = BrightTurquoise,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Số Tiền Tích Lũy Được:", color = TextGray, fontSize = 11.sp)
+                                    Text(
+                                        text = "${String.format("%.2f", p2pProxyRewardAccrued)}đ / 20.000đ",
+                                        color = AccentYellow,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Button(
+                                    onClick = { viewModel.claimP2pRewards() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentYellow, contentColor = DeepObsidian),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("🎁 NHẬN TIỀN VÀO VÍ VIP", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Log feed
+                        Text(
+                            text = "Nhật Ký AI Bảo Vệ Trung Gian (Thời gian thực):",
+                            color = TextGray,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.4f))
+                                .border(1.dp, BorderGreen.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .padding(8.dp)
+                        ) {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(p2pStatusLog) { log ->
+                                    Text(
+                                        text = log,
+                                        color = if (log.contains("⚠️")) Color(0xFFF97316) else if (log.contains("💰")) AccentYellow else if (log.contains("🛡️")) BrightTurquoise else GlowGreen,
+                                        fontSize = 9.5.sp,
+                                        lineHeight = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

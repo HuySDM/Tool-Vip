@@ -78,20 +78,20 @@ fun ToolVipApp() {
 
     val isPrivilegedUser = remember(userAccount) {
         val tier = userAccount?.tier ?: ""
-        tier == "ADMIN" || tier == "MANAGER" || tier == "STAFF" || tier == "CTV"
+        tier == "ADMIN" || tier == "MANAGER" || tier == "STAFF" || tier == "CTV" || tier == "PARTNER"
     }
 
-    // Lock app on launch disabled as requested - users only authenticate once at login
-    LaunchedEffect(userAccount) {
+    LaunchedEffect(currentUsername) {
+        // Unlock when user logs in/out or changes account
         isAppLocked = false
     }
 
-    // Force re-auth disabled as requested - users only authenticate once at login
-    DisposableEffect(lifecycleOwner, currentUsername) {
+    DisposableEffect(lifecycleOwner, currentUsername, isPrivilegedUser) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
-                // Do not lock the app again
-                isAppLocked = false
+                if (isPrivilegedUser) {
+                    isAppLocked = true
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -115,7 +115,7 @@ fun ToolVipApp() {
             var lockPassword by remember { mutableStateOf("") }
             var isPinVisible by remember { mutableStateOf(false) }
 
-            // Recovery states inside Lock Screen
+            // Recovery states inside Lock Screen (Restored)
             var showRecoveryInLock by remember { mutableStateOf(false) }
             var lockOtpState by remember { mutableStateOf("") }
             var lockNewPinState by remember { mutableStateOf("") }
@@ -253,7 +253,7 @@ fun ToolVipApp() {
                                 .padding(4.dp)
                         )
                     } else {
-                        // OTP recovery input directly on lock screen
+                        // OTP recovery input directly on lock screen (Restored)
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = "KHÔI PHỤC QUA EMAIL",
@@ -781,7 +781,7 @@ fun ToolVipApp() {
                     },
                     text = {
                         Text(
-                            text = "Tính năng '$privilegeRequiredFeature' yêu cầu thiết bị phải cấp quyền ROOT hoặc kết nối dịch vụ SHIZUKU thành công để có thể thực thi lệnh can thiệp hệ thống thực tế trên máy thật.\n\nNếu chưa liên kết, hệ thống sẽ tự động chạy chế độ MÔ PHỎNG tối ưu hóa cục bộ an toàn!",
+                            text = "Tính năng '$privilegeRequiredFeature' yêu cầu thiết bị phải cấp quyền ROOT hoặc kết nối dịch vụ SHIZUKU thành công để có thể thực thi lệnh can thiệp hệ thống thực tế trên máy thật.",
                             color = TextGray,
                             fontSize = 13.sp,
                             lineHeight = 18.sp
@@ -799,7 +799,7 @@ fun ToolVipApp() {
                     },
                     dismissButton = {
                         TextButton(onClick = { viewModel.dismissPrivilegeDialog() }) {
-                            Text("CHẠY MÔ PHỎNG", color = TextGray)
+                            Text("ĐÓNG", color = TextGray)
                         }
                     }
                 )

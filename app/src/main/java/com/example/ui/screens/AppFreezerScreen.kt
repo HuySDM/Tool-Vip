@@ -1004,6 +1004,209 @@ fun AppFreezerScreen(
             }
         }
 
+        // Shizuku Background Service Manager
+        item {
+            val shizukuBackgroundServices by viewModel.shizukuBackgroundServices.collectAsState()
+            val isScanningShizukuServices by viewModel.isScanningShizukuServices.collectAsState()
+            var isExpandedBySep by remember { mutableStateOf(false) }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkTealCard),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") BrightTurquoise else BorderGreen)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.SettingsSystemDaydream, "Services", tint = BrightTurquoise)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Dịch Vụ Ngầm Shizuku",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU" || rootPermissionStatus == "ĐÃ CẤP QUYỀN ROOT") GlowGreen else CoralVibrant)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (shizukuStatus == "ĐÃ KẾT NỐI SHIZUKU") "Shizuku Hoạt Động" else if (rootPermissionStatus == "ĐÃ CẤP QUYỀN ROOT") "Chế Độ Root Hoạt Động" else "Mô Phỏng Bảo Mật (Simulated)",
+                                        color = TextGray,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        IconButton(onClick = { isExpandedBySep = !isExpandedBySep }) {
+                            Icon(
+                                imageVector = if (isExpandedBySep) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = "Expand Services Manager",
+                                tint = Color.White
+                            )
+                        }
+                    }
+
+                    if (isExpandedBySep) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Cho phép tìm kiếm, giám sát thời gian thực và đóng băng/đình chỉ lập trình các tiến trình ngầm tốn RAM thông qua Shizuku API.",
+                            color = TextGray,
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.scanBackgroundServicesWithShizuku() },
+                                enabled = !isScanningShizukuServices,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = BrightTurquoise,
+                                    contentColor = DeepObsidian,
+                                    disabledContainerColor = BrightTurquoise.copy(alpha = 0.4f)
+                                ),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                if (isScanningShizukuServices) {
+                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), color = DeepObsidian, strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("ĐANG QUÉT CHẠY NGẦM...", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                } else {
+                                    Icon(Icons.Default.Refresh, "Scan services", modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("QUÉT DỊCH VỤ NGẦM SHIZUKU", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        if (shizukuBackgroundServices.isEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(DeepObsidian)
+                                    .border(BorderStroke(1.dp, BorderGreen), RoundedCornerShape(8.dp))
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Chưa phát hiện dịch vụ chạy ngầm nào. Nhấn Quét để tìm kiếm!",
+                                    color = TextGray,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "PHÁT HIỆN ${shizukuBackgroundServices.keys.size} ỨNG DỤNG ĐANG CHẠY DỊCH VỤ:",
+                                color = BrightTurquoise,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                shizukuBackgroundServices.forEach { (pkg, servicesList) ->
+                                    val appItem = apps.find { it.packageName == pkg }
+                                    val appDisplayName = appItem?.appName ?: pkg
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(DeepObsidian)
+                                            .border(BorderStroke(1.dp, BorderGreen.copy(alpha = 0.6f)), RoundedCornerShape(8.dp))
+                                            .padding(10.dp)
+                                    ) {
+                                        Column {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = appDisplayName,
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 12.sp
+                                                    )
+                                                    Text(
+                                                        text = pkg,
+                                                        color = TextGray,
+                                                        fontSize = 10.sp
+                                                    )
+                                                }
+                                                
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(6.dp))
+                                                        .background(CoralVibrant)
+                                                        .clickable { viewModel.freezeServiceWithShizuku(pkg) }
+                                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "ĐÌNH CHỈ (FREEZE)",
+                                                        color = Color.White,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Black
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Divider(color = BorderGreen.copy(alpha = 0.3f))
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            Text(
+                                                text = "Dịch vụ đang hoạt động:",
+                                                color = TextGray,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 9.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            servicesList.forEach { svc ->
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                                                ) {
+                                                    Icon(Icons.Default.PlayArrow, "Service active", tint = GlowGreen, modifier = Modifier.size(10.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text(
+                                                        text = svc,
+                                                        color = GlowGreen,
+                                                        fontSize = 10.sp,
+                                                        fontFamily = FontFamily.Monospace
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Search and Category Filters
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

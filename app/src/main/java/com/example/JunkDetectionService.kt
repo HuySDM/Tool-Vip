@@ -101,8 +101,8 @@ class JunkDetectionService : Service() {
                     Log.e(TAG, "Error in background scan: ${e.message}", e)
                 }
                 
-                // Scan periodically every 15 seconds in the background
-                delay(15000)
+                // Scan periodically every 45 seconds in the background (Optimized for low power consumption)
+                delay(45000)
             }
         }
     }

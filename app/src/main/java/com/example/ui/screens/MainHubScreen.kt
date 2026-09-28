@@ -1363,7 +1363,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = camUngSieuNhay,
-                        onCheckedChange = { camUngSieuNhay = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Cảm ứng siêu nhạy"
+                            } else {
+                                camUngSieuNhay = it
+                                viewModel.applyTouchSensitivityBoost(it)
+                                if (it) {
+                                    viewModel.showToast("Đã kích hoạt cảm ứng siêu nhạy!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise,
@@ -1408,7 +1418,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = tangTocPhanHoi,
-                        onCheckedChange = { tangTocPhanHoi = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Tăng tốc phản hồi cảm ứng"
+                            } else {
+                                tangTocPhanHoi = it
+                                viewModel.applyTouchResponseBoost(it)
+                                if (it) {
+                                    viewModel.showToast("Đã tăng tốc phản hồi cảm ứng!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise,
@@ -1497,7 +1517,17 @@ fun MainHubScreen(
                                     }
                                     Switch(
                                         checked = gameFpsMap[gameKey] ?: false,
-                                        onCheckedChange = { gameFpsMap[gameKey] = it },
+                                        onCheckedChange = { 
+                                            if (it && !viewModel.hasPrivilege()) {
+                                                viewModel.showPrivilegeRequiredDialog.value = "Mở khóa 120FPS & Fix Lag cho $gameKey"
+                                            } else {
+                                                gameFpsMap[gameKey] = it
+                                                viewModel.applyFpsAndLagFix(gameKey, it)
+                                                if (it) {
+                                                    viewModel.showToast("Đã mở khóa 120FPS & Tối ưu cho $gameKey!")
+                                                }
+                                            }
+                                        },
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = DeepObsidian,
                                             checkedTrackColor = BrightTurquoise
@@ -1544,7 +1574,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = toiUu4G5G,
-                        onCheckedChange = { toiUu4G5G = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Tối ưu 4G/5G"
+                            } else {
+                                toiUu4G5G = it
+                                viewModel.applyNetworkBoost(it)
+                                if (it) {
+                                    viewModel.showToast("Đã tối ưu cấu hình mạng 4G/5G Gaming!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise
@@ -1835,7 +1875,17 @@ fun MainHubScreen(
                         }
                         Switch(
                             checked = doPhanGiaiEnabled,
-                            onCheckedChange = { doPhanGiaiEnabled = it },
+                            onCheckedChange = { 
+                                if (it && !viewModel.hasPrivilege()) {
+                                    viewModel.showPrivilegeRequiredDialog.value = "Độ phân giải MH"
+                                } else {
+                                    doPhanGiaiEnabled = it
+                                    viewModel.applyResolutionConfig(it, selectedResolution)
+                                    if (it) {
+                                        viewModel.showToast("Đã kích hoạt tùy chỉnh độ phân giải: $selectedResolution!")
+                                    }
+                                }
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = DeepObsidian,
                                 checkedTrackColor = BrightTurquoise
@@ -1874,6 +1924,10 @@ fun MainHubScreen(
                                         onClick = {
                                             selectedResolution = res
                                             showResolutionDropdown = false
+                                            if (doPhanGiaiEnabled) {
+                                                viewModel.applyResolutionConfig(true, res)
+                                                viewModel.showToast("Đã chuyển sang độ phân giải: $res")
+                                            }
                                         }
                                     )
                                 }
@@ -1916,7 +1970,17 @@ fun MainHubScreen(
                         }
                         Switch(
                             checked = toiUuGpuEnabled,
-                            onCheckedChange = { toiUuGpuEnabled = it },
+                            onCheckedChange = { 
+                                if (it && !viewModel.hasPrivilege()) {
+                                    viewModel.showPrivilegeRequiredDialog.value = "Tối ưu GPU (Max GPU)"
+                                } else {
+                                    toiUuGpuEnabled = it
+                                    viewModel.applyGpuOptimization(it)
+                                    if (it) {
+                                        viewModel.showToast("Đã kích hoạt GPU Booster (Max GPU)!")
+                                    }
+                                }
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = DeepObsidian,
                                 checkedTrackColor = BrightTurquoise
@@ -2011,7 +2075,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = toiUuCpuEnabled,
-                        onCheckedChange = { toiUuCpuEnabled = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Tối ưu CPU (Max CPU)"
+                            } else {
+                                toiUuCpuEnabled = it
+                                viewModel.applyCpuOptimization(it)
+                                if (it) {
+                                    viewModel.showToast("Đã kích hoạt CPU Booster (Max CPU)!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise
@@ -2158,7 +2232,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = hoTroNgamGyro,
-                        onCheckedChange = { hoTroNgamGyro = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Hỗ trợ ngắm & Gyro"
+                            } else {
+                                hoTroNgamGyro = it
+                                viewModel.applyGyroscopeStabilization(it)
+                                if (it) {
+                                    viewModel.showToast("Đã kích hoạt hỗ trợ ngắm và giảm trễ Gyroscope!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise
@@ -2201,7 +2285,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = tatGioiHanNhiet,
-                        onCheckedChange = { tatGioiHanNhiet = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Tắt giới hạn nhiệt"
+                            } else {
+                                tatGioiHanNhiet = it
+                                viewModel.applyThermalThrottleOverride(it)
+                                if (it) {
+                                    viewModel.showToast("Đã mở khóa giới hạn nhiệt độ (Thermal Throttle Overridden)!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise
@@ -2244,7 +2338,17 @@ fun MainHubScreen(
                     }
                     Switch(
                         checked = mauSacRucRo,
-                        onCheckedChange = { mauSacRucRo = it },
+                        onCheckedChange = { 
+                            if (it && !viewModel.hasPrivilege()) {
+                                viewModel.showPrivilegeRequiredDialog.value = "Màu sắc rực rỡ"
+                            } else {
+                                mauSacRucRo = it
+                                if (it) {
+                                    viewModel.executePrivilegedCommand("settings put secure accessibility_display_daltonizer_enabled 0")
+                                    viewModel.showToast("Đã kích hoạt chế độ màu sắc rực rỡ!")
+                                }
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = DeepObsidian,
                             checkedTrackColor = BrightTurquoise
